@@ -32,7 +32,7 @@ export default function RootLayout({ children }) {
                   <a href="/" className="flex items-center gap-3 font-bold">
                     <div className="relative h-12 w-24 sm:h-14 sm:w-28">
                       <Image
-                        src="/logo.JPG"
+                        src="/logo.jpg"
                         alt="Fit im Garten Logo"
                         fill
                         className="object-contain"
