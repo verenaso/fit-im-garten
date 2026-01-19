@@ -9,7 +9,10 @@ export const metadata = {
 
 function NavLink({ href, children }) {
   return (
-    <a href={href} className="rounded-lg px-3 py-2 text-sm hover:bg-gray-100">
+    <a
+      href={href}
+      className="rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+    >
       {children}
     </a>
   );
@@ -18,25 +21,24 @@ function NavLink({ href, children }) {
 export default function RootLayout({ children }) {
   return (
     <html lang="de">
-      <body>
-        {/* WICHTIG: Provider muss um Header + Seiteninhalt herum */}
+      <body className="min-h-screen bg-gradient-to-b from-gray-50 to-white text-gray-900">
         <AuthProvider>
-          <header className="sticky top-0 z-10 border-b bg-white">
+          <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
             <div className="mx-auto max-w-5xl px-4 py-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                {/* Links: Titel + (Mobile) Auth */}
                 <div className="flex items-center justify-between gap-3">
-                  <a href="/" className="font-bold">
-                    Fit im Garten
+                  <a href="/" className="flex items-center gap-2 font-bold">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border bg-white shadow-sm">
+                      🌿
+                    </span>
+                    <span className="text-lg">Fit im Garten</span>
                   </a>
 
-                  {/* Auth nur auf Mobile sichtbar */}
                   <div className="sm:hidden">
                     <HeaderAuth />
                   </div>
                 </div>
 
-                {/* Rechts: Navigation + (Desktop) Auth */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                   <nav className="flex flex-wrap gap-1">
                     <NavLink href="/termine">Termine</NavLink>
@@ -46,7 +48,6 @@ export default function RootLayout({ children }) {
                     <NavLink href="/fotos">Fotos</NavLink>
                   </nav>
 
-                  {/* Auth nur auf Desktop sichtbar */}
                   <div className="hidden sm:block">
                     <HeaderAuth />
                   </div>
@@ -55,7 +56,11 @@ export default function RootLayout({ children }) {
             </div>
           </header>
 
-          <div className="mx-auto max-w-5xl px-4 py-6">{children}</div>
+          <div className="mx-auto max-w-5xl px-4 py-8">
+            <div className="rounded-3xl border bg-white p-5 shadow-sm sm:p-8">
+              {children}
+            </div>
+          </div>
         </AuthProvider>
       </body>
     </html>
