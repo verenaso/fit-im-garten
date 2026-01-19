@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useAuth } from "@/app/_components/AuthProvider";
+import { supabase } from "../../../lib/supabaseClient";
+import { useAuth } from "../../_components/AuthProvider";
 
 function todayYMD() {
   const d = new Date();
@@ -136,25 +136,23 @@ export default function WorkoutNeuPage() {
       <h1 className="text-2xl font-bold">Workout erstellen</h1>
 
       {authLoading ? (
-        <p className="mt-6 text-gray-600">Prüfe Login…</p>
+        <p className="mt-6 text-slate-600">Prüfe Login…</p>
       ) : !user ? (
-        <p className="mt-6 text-gray-700">Du bist nicht eingeloggt. Bitte logge dich ein.</p>
+        <p className="mt-6 text-slate-800">Du bist nicht eingeloggt. Bitte logge dich ein.</p>
       ) : loading ? (
-        <p className="mt-6 text-gray-600">Lade Übungen…</p>
+        <p className="mt-6 text-slate-600">Lade Übungen…</p>
       ) : (
         <>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-slate-600">
             Eingeloggt {isAdmin ? "(Admin)" : "(Mitglied)"}
           </p>
 
-          {!canCreate ? (
-            <p className="mt-6 text-gray-600">Nur Admins können Workouts erstellen.</p>
-          ) : null}
+          {!canCreate ? <p className="mt-6 text-slate-600">Nur Admins können Workouts erstellen.</p> : null}
 
           <form onSubmit={onSave} className="mt-6 rounded-xl border p-4 space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1">
-                <div className="text-sm text-gray-700">Datum</div>
+                <div className="text-sm text-slate-700">Datum</div>
                 <input
                   className="w-full rounded-lg border p-2"
                   type="date"
@@ -165,7 +163,7 @@ export default function WorkoutNeuPage() {
               </label>
 
               <label className="space-y-1">
-                <div className="text-sm text-gray-700">Titel</div>
+                <div className="text-sm text-slate-700">Titel</div>
                 <input
                   className="w-full rounded-lg border p-2"
                   value={title}
@@ -177,7 +175,7 @@ export default function WorkoutNeuPage() {
             </div>
 
             <label className="space-y-1 block">
-              <div className="text-sm text-gray-700">Notizen (optional)</div>
+              <div className="text-sm text-slate-700">Notizen (optional)</div>
               <textarea
                 className="w-full rounded-lg border p-2"
                 rows={3}
@@ -215,7 +213,7 @@ export default function WorkoutNeuPage() {
               </div>
 
               {items.length === 0 ? (
-                <p className="mt-3 text-gray-600 text-sm">Noch keine Übungen im Workout.</p>
+                <p className="mt-3 text-slate-600 text-sm">Noch keine Übungen im Workout.</p>
               ) : (
                 <div className="mt-4 space-y-3">
                   {items.map((it, idx) => {
@@ -230,7 +228,7 @@ export default function WorkoutNeuPage() {
 
                             <div className="mt-2 grid gap-2 sm:grid-cols-3">
                               <label className="space-y-1">
-                                <div className="text-xs text-gray-700">Sätze</div>
+                                <div className="text-xs text-slate-700">Sätze</div>
                                 <input
                                   className="w-full rounded-lg border p-2"
                                   inputMode="numeric"
@@ -241,7 +239,7 @@ export default function WorkoutNeuPage() {
                               </label>
 
                               <label className="space-y-1">
-                                <div className="text-xs text-gray-700">Wdh</div>
+                                <div className="text-xs text-slate-700">Wdh</div>
                                 <input
                                   className="w-full rounded-lg border p-2"
                                   inputMode="numeric"
@@ -252,7 +250,7 @@ export default function WorkoutNeuPage() {
                               </label>
 
                               <label className="space-y-1">
-                                <div className="text-xs text-gray-700">Dauer (Sek.)</div>
+                                <div className="text-xs text-slate-700">Dauer (Sek.)</div>
                                 <input
                                   className="w-full rounded-lg border p-2"
                                   inputMode="numeric"
@@ -264,7 +262,7 @@ export default function WorkoutNeuPage() {
                             </div>
 
                             <label className="space-y-1 block mt-2">
-                              <div className="text-xs text-gray-700">Notiz (optional)</div>
+                              <div className="text-xs text-slate-700">Notiz (optional)</div>
                               <input
                                 className="w-full rounded-lg border p-2"
                                 value={it.note}

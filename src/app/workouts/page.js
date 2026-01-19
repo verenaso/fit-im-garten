@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useAuth } from "@/app/_components/AuthProvider";
+import { supabase } from "../../lib/supabaseClient";
+import { useAuth } from "../_components/AuthProvider";
 
 function fmtDate(yyyyMmDd) {
   const [y, m, d] = yyyyMmDd.split("-").map(Number);
@@ -78,14 +78,14 @@ export default function WorkoutsPage() {
       <h1 className="text-2xl font-bold">Vergangene Workouts</h1>
 
       {authLoading ? (
-        <p className="mt-6 text-gray-600">Prüfe Login…</p>
+        <p className="mt-6 text-slate-600">Prüfe Login…</p>
       ) : !user ? (
-        <p className="mt-6 text-gray-700">
+        <p className="mt-6 text-slate-800">
           Du bist nicht eingeloggt. Bitte logge dich ein, um Workouts zu sehen.
         </p>
       ) : (
         <>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-slate-600">
             Eingeloggt {isAdmin ? "(Admin)" : "(Mitglied)"}
           </p>
 
@@ -96,11 +96,9 @@ export default function WorkoutsPage() {
           </div>
 
           {loading ? (
-            <p className="mt-6 text-gray-600">Lade…</p>
+            <p className="mt-6 text-slate-600">Lade…</p>
           ) : workouts.length === 0 ? (
-            <p className="mt-6 text-gray-600">
-              Noch keine Workouts gespeichert.
-            </p>
+            <p className="mt-6 text-slate-600">Noch keine Workouts gespeichert.</p>
           ) : (
             <div className="mt-6 space-y-4">
               {workouts.map((w) => (
@@ -108,12 +106,12 @@ export default function WorkoutsPage() {
                   <div className="font-semibold">
                     {fmtDate(w.workout_date)} · {w.title}
                   </div>
-                  {w.notes ? <div className="mt-2 text-gray-600">{w.notes}</div> : null}
+                  {w.notes ? <div className="mt-2 text-slate-700">{w.notes}</div> : null}
 
                   <div className="mt-3">
-                    <div className="text-sm font-semibold text-gray-700">Übungen</div>
+                    <div className="text-sm font-semibold text-slate-700">Übungen</div>
                     {!w.workout_items?.length ? (
-                      <div className="mt-1 text-gray-600 text-sm">Keine Übungen eingetragen.</div>
+                      <div className="mt-1 text-slate-600 text-sm">Keine Übungen eingetragen.</div>
                     ) : (
                       <ul className="mt-2 space-y-2">
                         {w.workout_items.map((it) => {
@@ -126,9 +124,9 @@ export default function WorkoutsPage() {
                             <li key={it.id} className="rounded-lg border p-3">
                               <div className="font-medium">{exName}</div>
                               {parts.length ? (
-                                <div className="text-sm text-gray-600">{parts.join(" · ")}</div>
+                                <div className="text-sm text-slate-600">{parts.join(" · ")}</div>
                               ) : null}
-                              {it.note ? <div className="mt-1 text-sm text-gray-600">{it.note}</div> : null}
+                              {it.note ? <div className="mt-1 text-sm text-slate-600">{it.note}</div> : null}
                             </li>
                           );
                         })}
