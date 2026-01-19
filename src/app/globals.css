@@ -1,26 +1,25 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    /* Mobile first: gute Basisgröße + angenehme Zeilenhöhe */
+    font-size: 16px;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  body {
+    @apply antialiased text-slate-900 bg-slate-50;
+  }
+
+  /* Überschriften etwas kräftiger/kontrastreicher */
+  h1 { @apply text-2xl font-bold tracking-tight; }
+  h2 { @apply text-xl font-semibold tracking-tight; }
+  h3 { @apply text-lg font-semibold; }
+
+  /* Standardtext dunkler als "gray-600" */
+  p { @apply text-slate-800 leading-relaxed; }
+
+  /* Links klar erkennbar */
+  a { @apply text-slate-900; }
 }

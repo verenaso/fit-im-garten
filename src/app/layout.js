@@ -1,4 +1,5 @@
 import "./globals.css";
+import Image from "next/image";
 import HeaderAuth from "./_components/HeaderAuth";
 import { AuthProvider } from "./_components/AuthProvider";
 
@@ -11,7 +12,7 @@ function NavLink({ href, children }) {
   return (
     <a
       href={href}
-      className="rounded-xl px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+      className="rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
     >
       {children}
     </a>
@@ -21,16 +22,24 @@ function NavLink({ href, children }) {
 export default function RootLayout({ children }) {
   return (
     <html lang="de">
-      <body className="min-h-screen bg-gradient-to-b from-gray-50 to-white text-gray-900">
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
         <AuthProvider>
-          <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur">
+          {/* Mobile first: Header SOLID (kein /80). Blur erst ab sm. */}
+          <header className="sticky top-0 z-10 border-b bg-white sm:bg-white/90 sm:backdrop-blur">
             <div className="mx-auto max-w-5xl px-4 py-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center justify-between gap-3">
-                  <a href="/" className="flex items-center gap-2 font-bold">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border bg-white shadow-sm">
-                      🌿
-                    </span>
+                  <a href="/" className="flex items-center gap-3 font-bold">
+                    <div className="relative h-12 w-24 sm:h-14 sm:w-28">
+                      <Image
+                        src="/logo.jpg"
+                        alt="Fit im Garten Logo"
+                        fill
+                        className="object-contain"
+                        priority
+                      />
+                    </div>
+
                     <span className="text-lg">Fit im Garten</span>
                   </a>
 
@@ -56,8 +65,9 @@ export default function RootLayout({ children }) {
             </div>
           </header>
 
-          <div className="mx-auto max-w-5xl px-4 py-8">
-            <div className="rounded-3xl border bg-white p-5 shadow-sm sm:p-8">
+          {/* Mobile first: etwas mehr Luft und klare Karte */}
+          <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
               {children}
             </div>
           </div>
