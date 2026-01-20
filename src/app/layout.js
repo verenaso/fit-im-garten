@@ -1,24 +1,54 @@
+"use client";
+
 import "./globals.css";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import HeaderAuth from "./_components/HeaderAuth";
 import { AuthProvider } from "./_components/AuthProvider";
 
-export const metadata = {
-  title: "Fit im Garten",
-  description: "Termine, Übungen, Workouts und Fotos",
-};
+function isActivePath(pathname, href) {
+  if (!pathname) return false;
+
+  // Exakt match
+  if (pathname === href) return true;
+
+  // Sonderfall: /workouts/neu soll NICHT auch "Historie" (/workouts) aktivieren
+  if (href === "/workouts" && pathname.startsWith("/workouts/")) {
+    if (pathname.startsWith("/workouts/neu")) return false;
+    return true;
+  }
+
+  // Generisches Prefix-Matching für Unterseiten (außer "/")
+  if (href !== "/" && pathname.startsWith(href + "/")) return true;
+
+  return false;
+}
 
 function NavLink({ href, children }) {
+  const pathname = usePathname();
+  const active = isActivePath(pathname, href);
+
   return (
-    <a href={href} className="navlink">
+    <a
+      href={href}
+      className={`navlink${active ? " is-active" : ""}`}
+      aria-current={active ? "page" : undefined}
+    >
       {children}
     </a>
   );
 }
 
 function BottomNavItem({ href, label, icon }) {
+  const pathname = usePathname();
+  const active = isActivePath(pathname, href);
+
   return (
-    <a href={href} className="bottomnavitem">
+    <a
+      href={href}
+      className={`bottomnavitem${active ? " is-active" : ""}`}
+      aria-current={active ? "page" : undefined}
+    >
       <span className="text-lg leading-none">{icon}</span>
       <span className="font-medium">{label}</span>
     </a>
@@ -50,7 +80,11 @@ export default function RootLayout({ children }) {
           >
             <div className="mx-auto max-w-5xl px-4 py-3">
               <div className="flex items-center justify-between gap-3">
-                <a href="/" className="flex items-center gap-3 font-bold">
+                <a
+                  href="/"
+                  className="flex items-center gap-3 font-bold"
+                  style={{ WebkitTapHighlightColor: "transparent" }}
+                >
                   <div className="relative h-12 w-24 sm:h-14 sm:w-28">
                     <Image
                       src="/fitimgarten-logo.jpg"

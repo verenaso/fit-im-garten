@@ -7,12 +7,12 @@ body {
 
 /* Logo-Lila als CSS-Variablen */
 :root {
-  --c-base: #5c4c7c;   /* Haupt-Lila (Logo) */
-  --c-dark: #45395d;   /* dunkler für Borders/Header */
+  --c-base: #5c4c7c; /* Haupt-Lila (Logo) */
+  --c-dark: #45395d; /* dunkler für Borders/Header */
   --c-darker: #332a44; /* sehr dunkel (Text/Flächen) */
-  --c-hover: #85799d;  /* Hover */
-  --c-text: #f5f3ff;   /* sehr hell */
-  --c-muted: #efeaff;  /* hell gedimmt */
+  --c-hover: #85799d; /* Hover */
+  --c-text: #f5f3ff; /* sehr hell */
+  --c-muted: #efeaff; /* hell gedimmt */
 }
 
 /* Grund-Theme: Hintergrund lila, Standardtext hell */
@@ -35,10 +35,23 @@ body {
   font-weight: 600;
   color: var(--c-text);
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease,
+    transform 0.05s ease;
 }
 .navlink:hover {
   background: var(--c-hover);
   color: white;
+}
+.navlink:active {
+  transform: translateY(1px);
+}
+
+/* Active state (Desktop) */
+.navlink.is-active,
+.navlink[aria-current="page"] {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 /* Mobile Bottom Nav */
@@ -54,10 +67,23 @@ body {
   font-weight: 600;
   color: var(--c-text);
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease,
+    transform 0.05s ease;
 }
 .bottomnavitem:hover {
   background: var(--c-hover);
   color: white;
+}
+.bottomnavitem:active {
+  transform: translateY(1px);
+}
+
+/* Active state (Mobile) */
+.bottomnavitem.is-active,
+.bottomnavitem[aria-current="page"] {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 /* Standard: "graue" Texte auf lila Hintergrund sollen hell sein */
@@ -102,4 +128,219 @@ body {
 .content-card textarea,
 .content-card select {
   color: #332a44;
+}
+
+/* =========================
+   UI Kit (no tailwind @apply)
+   ========================= */
+
+/* Helpers */
+.ui-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.ui-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ui-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: var(--c-darker);
+  margin: 0 0 8px 0;
+}
+
+.ui-muted {
+  opacity: 0.8;
+}
+
+/* Card/List */
+.ui-card {
+  background: #fff;
+  border: 1px solid rgba(51, 42, 68, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(51, 42, 68, 0.08);
+}
+
+.ui-card-pad {
+  padding: 14px;
+}
+.ui-card-pad-lg {
+  padding: 18px;
+}
+
+.ui-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ui-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(51, 42, 68, 0.10);
+  background: rgba(92, 76, 124, 0.05);
+}
+.ui-list-item:active {
+  transform: translateY(1px);
+}
+
+/* Badges */
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(51, 42, 68, 0.14);
+  background: rgba(92, 76, 124, 0.08);
+  color: var(--c-darker);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.05s ease, background-color 0.15s ease,
+    border-color 0.15s ease, opacity 0.15s ease;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary {
+  background: var(--c-base);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+.btn-primary:hover {
+  filter: brightness(1.03);
+}
+
+.btn-secondary {
+  background: rgba(92, 76, 124, 0.10);
+  color: var(--c-darker);
+  border-color: rgba(51, 42, 68, 0.16);
+}
+.btn-secondary:hover {
+  background: rgba(92, 76, 124, 0.14);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--c-darker);
+  border-color: rgba(51, 42, 68, 0.16);
+}
+.btn-ghost:hover {
+  background: rgba(92, 76, 124, 0.08);
+}
+
+.btn-danger {
+  background: rgba(220, 38, 38, 0.10);
+  color: rgb(153, 27, 27);
+  border-color: rgba(220, 38, 38, 0.22);
+}
+
+.btn-full {
+  width: 100%;
+}
+.btn-sm {
+  height: 38px;
+  border-radius: 12px;
+  padding: 0 12px;
+  font-weight: 700;
+}
+.btn-icon {
+  width: 44px;
+  padding: 0;
+}
+
+/* Inputs */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-darker);
+  opacity: 0.92;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid rgba(51, 42, 68, 0.18);
+  background: #fff;
+  color: var(--c-darker);
+  padding: 12px 12px;
+  font-size: 16px; /* wichtig für iOS: verhindert Auto-Zoom */
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.textarea {
+  min-height: 104px;
+  resize: vertical;
+  padding-top: 12px;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: rgba(92, 76, 124, 0.65);
+  box-shadow: 0 0 0 4px rgba(92, 76, 124, 0.18);
+}
+
+.help {
+  font-size: 12px;
+  opacity: 0.75;
+  color: var(--c-darker);
+}
+
+/* Toolbar (z.B. Filter/Actions oben in Seiten) */
+.ui-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.ui-toolbar-left,
+.ui-toolbar-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Loading / Empty states */
+.ui-empty {
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px dashed rgba(51, 42, 68, 0.22);
+  background: rgba(92, 76, 124, 0.05);
+  color: var(--c-darker);
+  opacity: 0.9;
 }
