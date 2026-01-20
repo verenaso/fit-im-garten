@@ -16,7 +16,7 @@ function fmtDate(yyyyMmDd) {
 }
 
 export default function WorkoutsPage() {
-  const { user, role, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading, refresh } = useAuth();
   const isAdmin = role === "admin";
 
   const [loading, setLoading] = useState(true);
@@ -65,20 +65,31 @@ export default function WorkoutsPage() {
 
   useEffect(() => {
     if (authLoading) return;
+
     if (!user) {
       setWorkouts([]);
       setLoading(false);
       return;
     }
+
     loadWorkouts();
-  }, [authLoading, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
 
   return (
     <main className="min-h-screen">
       <h1 className="text-2xl font-bold">Vergangene Workouts</h1>
 
       {authLoading ? (
-        <p className="mt-6 text-slate-600">Prüfe Login…</p>
+        <div className="mt-6 space-y-3">
+          <p className="text-slate-600">Prüfe Login…</p>
+          <button
+            className="rounded-lg border px-4 py-2 text-sm"
+            onClick={() => refresh()}
+          >
+            Neu versuchen
+          </button>
+        </div>
       ) : !user ? (
         <p className="mt-6 text-slate-800">
           Du bist nicht eingeloggt. Bitte logge dich ein, um Workouts zu sehen.
@@ -106,12 +117,20 @@ export default function WorkoutsPage() {
                   <div className="font-semibold">
                     {fmtDate(w.workout_date)} · {w.title}
                   </div>
-                  {w.notes ? <div className="mt-2 text-slate-700">{w.notes}</div> : null}
+
+                  {w.notes ? (
+                    <div className="mt-2 text-slate-700">{w.notes}</div>
+                  ) : null}
 
                   <div className="mt-3">
-                    <div className="text-sm font-semibold text-slate-700">Übungen</div>
+                    <div className="text-sm font-semibold text-slate-700">
+                      Übungen
+                    </div>
+
                     {!w.workout_items?.length ? (
-                      <div className="mt-1 text-slate-600 text-sm">Keine Übungen eingetragen.</div>
+                      <div className="mt-1 text-slate-600 text-sm">
+                        Keine Übungen eingetragen.
+                      </div>
                     ) : (
                       <ul className="mt-2 space-y-2">
                         {w.workout_items.map((it) => {
@@ -120,13 +139,20 @@ export default function WorkoutsPage() {
                           if (it.sets) parts.push(`${it.sets} Sätze`);
                           if (it.reps) parts.push(`${it.reps} Wdh`);
                           if (it.duration_sec) parts.push(`${it.duration_sec}s`);
+
                           return (
                             <li key={it.id} className="rounded-lg border p-3">
                               <div className="font-medium">{exName}</div>
                               {parts.length ? (
-                                <div className="text-sm text-slate-600">{parts.join(" · ")}</div>
+                                <div className="text-sm text-slate-600">
+                                  {parts.join(" · ")}
+                                </div>
                               ) : null}
-                              {it.note ? <div className="mt-1 text-sm text-slate-600">{it.note}</div> : null}
+                              {it.note ? (
+                                <div className="mt-1 text-sm text-slate-600">
+                                  {it.note}
+                                </div>
+                              ) : null}
                             </li>
                           );
                         })}
