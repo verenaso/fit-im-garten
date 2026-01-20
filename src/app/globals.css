@@ -1,6 +1,71 @@
 @import "tailwindcss";
 
-/* extra: smoother text rendering */
-html, body {
+html,
+body {
   height: 100%;
+}
+
+/* Logo-Lila als CSS-Variablen (damit wir überall exakt denselben Ton nutzen können) */
+:root {
+  --c-base: #5c4c7c;   /* Haupt-Lila */
+  --c-dark: #45395d;   /* Border/Header */
+  --c-darker: #332a44; /* Bottom Nav */
+  --c-hover: #85799d;  /* Hover */
+  --c-text: #f5f3ff;   /* sehr hell */
+  --c-muted: #e6e0f2;  /* leicht gedimmt */
+}
+
+/* Globales “Dark Purple” Grundgefühl */
+body {
+  background: var(--c-base);
+  color: var(--c-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Kleine Helfer-Klassen */
+.navlink {
+  display: inline-block;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--c-text);
+  text-decoration: none;
+}
+.navlink:hover {
+  background: var(--c-hover);
+  color: white;
+}
+
+.bottomnavitem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-radius: 1rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--c-text);
+  text-decoration: none;
+}
+.bottomnavitem:hover {
+  background: var(--c-hover);
+  color: white;
+}
+
+/* Damit alte “graue” Texte auf Dark Theme nicht zu dunkel sind */
+.text-slate-600,
+.text-slate-700,
+.text-slate-800 {
+  color: var(--c-muted) !important;
+}
+
+/* Borders & “bg-white” auf Dark Theme neutralisieren */
+.border {
+  border-color: var(--c-dark) !important;
+}
+.bg-white {
+  background: rgba(51, 42, 68, 0.35) !important;
 }
