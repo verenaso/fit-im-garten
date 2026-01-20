@@ -5,31 +5,39 @@ body {
   height: 100%;
 }
 
-/* Logo-Lila als CSS-Variablen (damit wir überall exakt denselben Ton nutzen können) */
+/* Logo-Lila als CSS-Variablen */
 :root {
   --c-base: #5c4c7c;   /* Haupt-Lila */
   --c-dark: #45395d;   /* Border/Header */
   --c-darker: #332a44; /* Bottom Nav */
   --c-hover: #85799d;  /* Hover */
   --c-text: #f5f3ff;   /* sehr hell */
-  --c-muted: #e6e0f2;  /* leicht gedimmt */
+  --c-muted: #efeaff;  /* heller als vorher */
 }
 
-/* Globales “Dark Purple” Grundgefühl */
+/* Global */
 body {
   background: var(--c-base);
   color: var(--c-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Schrift etwas “kräftiger” */
+  font-weight: 500;
 }
 
-/* Kleine Helfer-Klassen */
+/* Überschriften noch etwas kräftiger */
+h1, h2, h3 {
+  font-weight: 700;
+}
+
+/* Links / Navigation */
 .navlink {
   display: inline-block;
   border-radius: 0.75rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600; /* kräftiger */
   color: var(--c-text);
   text-decoration: none;
 }
@@ -47,6 +55,7 @@ body {
   border-radius: 1rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.75rem;
+  font-weight: 600; /* kräftiger */
   color: var(--c-text);
   text-decoration: none;
 }
@@ -55,14 +64,18 @@ body {
   color: white;
 }
 
-/* Damit alte “graue” Texte auf Dark Theme nicht zu dunkel sind */
+/* “Graue” Texte aus der App heller machen */
 .text-slate-600,
 .text-slate-700,
-.text-slate-800 {
+.text-slate-800,
+.text-gray-500,
+.text-gray-600,
+.text-gray-700 {
   color: var(--c-muted) !important;
+  opacity: 0.95 !important;
 }
 
-/* Borders & “bg-white” auf Dark Theme neutralisieren */
+/* Borders & “bg-white” für Dark Theme */
 .border {
   border-color: var(--c-dark) !important;
 }

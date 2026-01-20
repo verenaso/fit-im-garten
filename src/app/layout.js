@@ -28,6 +28,10 @@ function BottomNavItem({ href, label, icon }) {
 export default function RootLayout({ children }) {
   return (
     <html lang="de">
+          <head>
+      <meta name="theme-color" content="#5C4C7C" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    </head>
       <body className="min-h-screen antialiased">
         <AuthProvider>
           <header
