@@ -1,12 +1,11 @@
 @import "tailwindcss";
 
-/* Purple/Dark Theme – mobile first */
+/* Purple/Dark Theme – build-sicher (keine hover:/focus:/placeholder: in @apply) */
 @layer base {
   body {
     @apply min-h-screen bg-purple-950 text-purple-50 antialiased;
   }
 
-  /* Standard-Typo: hell & gut lesbar */
   h1 { @apply text-2xl font-bold tracking-tight text-purple-50; }
   h2 { @apply text-xl font-semibold tracking-tight text-purple-50; }
   h3 { @apply text-lg font-semibold text-purple-50; }
@@ -15,13 +14,13 @@
 }
 
 @layer components {
-  /* Wiederverwendbare Bausteine (damit alles "wie aus einem Guss" wird) */
   .card {
     @apply rounded-3xl border border-purple-800 bg-purple-900/30 shadow-sm;
   }
 
   .muted {
-    @apply text-purple-200/80;
+    @apply text-purple-200;
+    opacity: 0.85;
   }
 
   .btn {
@@ -29,23 +28,30 @@
   }
 
   .btn-primary {
-    @apply btn bg-purple-600 text-white hover:bg-purple-500;
+    @apply btn bg-purple-600 text-white;
+  }
+  .btn-primary:hover {
+    @apply bg-purple-500;
   }
 
   .btn-ghost {
-    @apply btn border border-purple-700 bg-purple-950/20 text-purple-100 hover:bg-purple-900/30;
+    @apply btn border border-purple-700 bg-purple-950/20 text-purple-100;
+  }
+  .btn-ghost:hover {
+    @apply bg-purple-900/30;
   }
 
   .input {
-    @apply w-full rounded-xl border border-purple-700 bg-purple-950/30 px-3 py-2 text-purple-50
-      placeholder:text-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500;
+    @apply w-full rounded-xl border border-purple-700 bg-purple-950/30 px-3 py-2 text-purple-50;
+  }
+  .input::placeholder {
+    @apply text-purple-300;
+  }
+  .input:focus {
+    outline: none;
+    @apply ring-2 ring-purple-500;
   }
 
-  .textarea {
-    @apply input;
-  }
-
-  .select {
-    @apply input;
-  }
+  .textarea { @apply input; }
+  .select { @apply input; }
 }
