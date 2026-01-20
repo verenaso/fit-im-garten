@@ -81,4 +81,14 @@ h1, h2, h3 {
 }
 .bg-white {
   background: rgba(51, 42, 68, 0.35) !important;
+  /* In der weißen Content-Box: Standardtexte dunkel */
+.content-card .text-slate-600,
+.content-card .text-slate-700,
+.content-card .text-slate-800,
+.content-card .text-gray-500,
+.content-card .text-gray-600,
+.content-card .text-gray-700 {
+  color: #5c4c7c !important; /* mittleres Logo-Lila */
+  opacity: 1 !important;
+}
 }
