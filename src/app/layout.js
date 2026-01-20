@@ -34,7 +34,7 @@ function BottomNavItem({ href, label, icon }) {
 export default function RootLayout({ children }) {
   return (
     <html lang="de">
-      <body>
+      <body className="min-h-screen bg-purple-950 text-purple-50 antialiased">
         <AuthProvider>
           <header className="sticky top-0 z-10 border-b border-purple-800 bg-purple-950/90 backdrop-blur">
             <div className="mx-auto max-w-5xl px-4 py-3">
@@ -49,13 +49,15 @@ export default function RootLayout({ children }) {
                       priority
                     />
                   </div>
-                  <span className="hidden sm:inline text-lg text-white">Fit im Garten</span>
+                  <span className="hidden sm:inline text-lg text-white">
+                    Fit im Garten
+                  </span>
                 </a>
 
                 <HeaderAuth />
               </div>
 
-              {/* Desktop-Navigation */}
+              {/* Desktop Nav */}
               <div className="mt-3 hidden sm:block">
                 <nav className="flex flex-wrap gap-1">
                   <NavLink href="/termine">Termine</NavLink>
@@ -68,12 +70,14 @@ export default function RootLayout({ children }) {
             </div>
           </header>
 
-          {/* Content: Platz für Bottom Nav */}
+          {/* Content (mit Platz für Bottom Nav) */}
           <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8 pb-24 sm:pb-8">
-            <div className="card p-5 sm:p-8">{children}</div>
+            <div className="rounded-3xl border border-purple-800 bg-purple-900/30 p-5 shadow-sm sm:p-8">
+              {children}
+            </div>
           </div>
 
-          {/* Bottom Nav: nur Mobile */}
+          {/* Bottom Nav: mobile only */}
           <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-purple-800 bg-purple-950/95 backdrop-blur sm:hidden">
             <div className="mx-auto max-w-5xl px-3 py-2">
               <div className="grid grid-cols-5 gap-2">

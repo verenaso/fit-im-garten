@@ -1,61 +1,6 @@
 @import "tailwindcss";
 
-/* Purple/Dark Theme – Tailwind build-sicher */
-@layer base {
-  body {
-    @apply min-h-screen bg-purple-950 text-purple-50 antialiased;
-  }
-
-  h1 { @apply text-2xl font-bold tracking-tight text-purple-50; }
-  h2 { @apply text-xl font-semibold tracking-tight text-purple-50; }
-  h3 { @apply text-lg font-semibold text-purple-50; }
-
-  p { @apply leading-relaxed text-purple-100; }
-}
-
-@layer components {
-  .card {
-    @apply rounded-3xl border border-purple-800 bg-purple-900/30 shadow-sm;
-  }
-
-  .muted {
-    @apply text-purple-200;
-    opacity: 0.85;
-  }
-
-  /* Button-Basis (als Klasse nutzbar, aber NICHT in @apply referenzieren) */
-  .btn {
-    @apply rounded-xl px-4 py-2 font-medium transition;
-  }
-
-  /* Primär-Button: Utilities direkt hier (kein @apply btn) */
-  .btn-primary {
-    @apply rounded-xl px-4 py-2 font-medium transition bg-purple-600 text-white;
-  }
-  .btn-primary:hover {
-    @apply bg-purple-500;
-  }
-
-  /* Ghost-Button */
-  .btn-ghost {
-    @apply rounded-xl px-4 py-2 font-medium transition border border-purple-700 bg-purple-950/20 text-purple-100;
-  }
-  .btn-ghost:hover {
-    @apply bg-purple-900/30;
-  }
-
-  /* Inputs */
-  .input {
-    @apply w-full rounded-xl border border-purple-700 bg-purple-950/30 px-3 py-2 text-purple-50;
-  }
-  .input::placeholder {
-    @apply text-purple-300;
-  }
-  .input:focus {
-    outline: none;
-    @apply ring-2 ring-purple-500;
-  }
-
-  .textarea { @apply input; }
-  .select { @apply input; }
+/* extra: smoother text rendering */
+html, body {
+  height: 100%;
 }

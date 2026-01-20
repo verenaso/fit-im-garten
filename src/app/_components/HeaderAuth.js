@@ -15,7 +15,10 @@ export default function HeaderAuth() {
 
   if (!user) {
     return (
-      <a className="btn-ghost text-sm" href="/login">
+      <a
+        className="rounded-xl border border-purple-700 bg-purple-950/20 px-4 py-2 text-sm text-purple-100 hover:bg-purple-900/30"
+        href="/login"
+      >
         Login
       </a>
     );
@@ -33,7 +36,11 @@ export default function HeaderAuth() {
           </span>
         ) : null}
       </div>
-      <button className="btn-ghost text-sm" onClick={onLogout}>
+
+      <button
+        className="rounded-xl border border-purple-700 bg-purple-950/20 px-4 py-2 text-sm text-purple-100 hover:bg-purple-900/30"
+        onClick={onLogout}
+      >
         Logout
       </button>
     </div>
