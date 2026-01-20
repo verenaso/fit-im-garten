@@ -160,8 +160,6 @@ export default function LoginPage() {
 
             {/* Hinweis */}
             <p className="mt-4 text-xs text-slate-600">
-              Tipp: Wenn du dein Passwort vergisst, können wir später einen
-              “Passwort zurücksetzen”-Flow einbauen.
             </p>
           </div>
         </form>
