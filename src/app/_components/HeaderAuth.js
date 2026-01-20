@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "../../lib/supabaseClient"; // RELATIV
+import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "./AuthProvider";
 
 export default function HeaderAuth() {
@@ -8,13 +8,14 @@ export default function HeaderAuth() {
 
   async function onLogout() {
     await supabase.auth.signOut();
+    window.location.href = "/";
   }
 
-  if (loading) return <div className="text-sm text-gray-600">…</div>;
+  if (loading) return <div className="text-sm text-purple-200">…</div>;
 
   if (!user) {
     return (
-      <a className="rounded-lg border px-3 py-2 text-sm" href="/login">
+      <a className="btn-ghost text-sm" href="/login">
         Login
       </a>
     );
@@ -24,15 +25,15 @@ export default function HeaderAuth() {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="text-sm text-gray-700">
+      <div className="hidden sm:block text-sm text-purple-100">
         {user.email}{" "}
         {badge ? (
-          <span className="ml-1 rounded-full border px-2 py-0.5 text-xs">
+          <span className="ml-1 rounded-full border border-purple-700 bg-purple-900/30 px-2 py-0.5 text-xs text-purple-100">
             {badge}
           </span>
         ) : null}
       </div>
-      <button className="rounded-lg border px-3 py-2 text-sm" onClick={onLogout}>
+      <button className="btn-ghost text-sm" onClick={onLogout}>
         Logout
       </button>
     </div>
