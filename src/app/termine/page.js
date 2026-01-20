@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useAuth } from "@/app/_components/AuthProvider";
+import { supabase } from "../../lib/supabaseClient";
+import { useAuth } from "../_components/AuthProvider";
+import PollWidget from "./_components/PollWidget";
 
 function fmtDateTime(isoString) {
   const d = new Date(isoString);
@@ -31,6 +32,7 @@ export default function TerminePage() {
 
   async function loadTermine() {
     setLoading(true);
+
     const { data, error } = await supabase
       .from("sessions")
       .select("id, starts_at, location, note")
@@ -42,13 +44,16 @@ export default function TerminePage() {
 
   useEffect(() => {
     if (authLoading) return;
+
     if (!user) {
       setTermine([]);
       setLoading(false);
       return;
     }
+
     loadTermine();
-  }, [authLoading, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
 
   const canCreate = useMemo(() => isAdmin, [isAdmin]);
 
@@ -84,10 +89,12 @@ export default function TerminePage() {
     if (!ok) return;
 
     const { error } = await supabase.from("sessions").delete().eq("id", id);
+
     if (error) {
       alert("Konnte Termin nicht löschen.\n\n" + error.message);
       return;
     }
+
     await loadTermine();
   }
 
@@ -107,80 +114,111 @@ export default function TerminePage() {
             Eingeloggt {isAdmin ? "(Admin)" : "(Mitglied)"}
           </p>
 
+          {/* Abstimmungstool ganz oben */}
+          <div className="mt-6">
+            <PollWidget />
+          </div>
+
+          {/* Admin: Termin anlegen */}
           {canCreate ? (
-            <form onSubmit={onCreate} className="mt-6 rounded-xl border p-4 space-y-3">
-              <div className="font-semibold">Neuen Termin anlegen</div>
+            <form onSubmit={onCreate} className="mt-6 ui-card ui-card-pad-lg ui-col">
+              <div className="ui-section-title" style={{ marginBottom: 0 }}>
+                Neuen Termin anlegen
+              </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
-                <label className="space-y-1">
-                  <div className="text-sm text-gray-700">Datum</div>
+                <div className="field">
+                  <div className="label">Datum</div>
                   <input
-                    className="w-full rounded-lg border p-2"
+                    className="input"
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     required
                   />
-                </label>
+                </div>
 
-                <label className="space-y-1">
-                  <div className="text-sm text-gray-700">Uhrzeit</div>
+                <div className="field">
+                  <div className="label">Uhrzeit</div>
                   <input
-                    className="w-full rounded-lg border p-2"
+                    className="input"
                     type="time"
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
                     required
                   />
-                </label>
+                </div>
 
-                <label className="space-y-1">
-                  <div className="text-sm text-gray-700">Ort</div>
+                <div className="field">
+                  <div className="label">Ort</div>
                   <input
-                    className="w-full rounded-lg border p-2"
+                    className="input"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="z.B. Sporthalle"
                     required
                   />
-                </label>
+                </div>
               </div>
 
-              <label className="space-y-1 block">
-                <div className="text-sm text-gray-700">Notiz (optional)</div>
+              <div className="field">
+                <div className="label">Notiz (optional)</div>
                 <input
-                  className="w-full rounded-lg border p-2"
+                  className="input"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="z.B. Intervall + Mobility"
                 />
-              </label>
+              </div>
 
-              <button className="rounded-lg border px-4 py-2">Termin speichern</button>
+              <div className="ui-row" style={{ justifyContent: "flex-end" }}>
+                <button className="btn btn-primary btn-sm" type="submit">
+                  Termin speichern
+                </button>
+              </div>
+
+              <div className="help">
+                Hinweis: Nur Admins können Termine anlegen oder löschen.
+              </div>
             </form>
           ) : (
-            <p className="mt-6 text-gray-600">Nur Admins können Termine anlegen oder löschen.</p>
+            <div className="mt-6 ui-empty">Nur Admins können Termine anlegen oder löschen.</div>
           )}
 
+          {/* Termine Liste */}
           <div className="mt-6">
-            <div className="font-semibold">Kommende Termine</div>
+            <div className="ui-section-title">Kommende Termine</div>
 
             {loading ? (
-              <p className="mt-3 text-gray-600">Lade…</p>
+              <div className="ui-empty">Lade…</div>
             ) : termine.length === 0 ? (
-              <p className="mt-3 text-gray-600">Noch keine Termine.</p>
+              <div className="ui-empty">Noch keine Termine.</div>
             ) : (
-              <div className="mt-3 space-y-3">
+              <div className="ui-list">
                 {termine.map((t) => (
-                  <div key={t.id} className="rounded-xl border p-4">
-                    <div className="font-semibold">{fmtDateTime(t.starts_at)}</div>
-                    <div className="text-gray-700">{t.location}</div>
-                    {t.note ? <div className="mt-2 text-gray-600">{t.note}</div> : null}
+                  <div key={t.id} className="ui-card ui-card-pad">
+                    <div style={{ fontWeight: 800, color: "var(--c-darker)" }}>
+                      {fmtDateTime(t.starts_at)}
+                    </div>
+                    <div className="ui-muted" style={{ color: "var(--c-darker)" }}>
+                      {t.location}
+                    </div>
+                    {t.note ? (
+                      <div style={{ marginTop: 8, color: "var(--c-darker)", opacity: 0.9 }}>
+                        {t.note}
+                      </div>
+                    ) : null}
 
                     {isAdmin ? (
-                      <button className="mt-3 underline text-sm" onClick={() => onDelete(t.id)}>
-                        Löschen
-                      </button>
+                      <div className="ui-row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          type="button"
+                          onClick={() => onDelete(t.id)}
+                        >
+                          Löschen
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 ))}
