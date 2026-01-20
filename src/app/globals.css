@@ -7,37 +7,32 @@ body {
 
 /* Logo-Lila als CSS-Variablen */
 :root {
-  --c-base: #5c4c7c;   /* Haupt-Lila */
-  --c-dark: #45395d;   /* Border/Header */
-  --c-darker: #332a44; /* Bottom Nav */
+  --c-base: #5c4c7c;   /* Haupt-Lila (Logo) */
+  --c-dark: #45395d;   /* dunkler für Borders/Header */
+  --c-darker: #332a44; /* sehr dunkel (Text/Flächen) */
   --c-hover: #85799d;  /* Hover */
   --c-text: #f5f3ff;   /* sehr hell */
-  --c-muted: #efeaff;  /* heller als vorher */
+  --c-muted: #efeaff;  /* hell gedimmt */
 }
 
-/* Global */
+/* Grund-Theme: Hintergrund lila, Standardtext hell */
 body {
   background: var(--c-base);
   color: var(--c-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Schrift etwas “kräftiger” */
+  /* Etwas kräftiger als Standard */
   font-weight: 500;
 }
 
-/* Überschriften noch etwas kräftiger */
-h1, h2, h3 {
-  font-weight: 700;
-}
-
-/* Links / Navigation */
+/* Header/Navigation Links */
 .navlink {
   display: inline-block;
   border-radius: 0.75rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  font-weight: 600; /* kräftiger */
+  font-weight: 600;
   color: var(--c-text);
   text-decoration: none;
 }
@@ -46,6 +41,7 @@ h1, h2, h3 {
   color: white;
 }
 
+/* Mobile Bottom Nav */
 .bottomnavitem {
   display: flex;
   flex-direction: column;
@@ -55,7 +51,7 @@ h1, h2, h3 {
   border-radius: 1rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.75rem;
-  font-weight: 600; /* kräftiger */
+  font-weight: 600;
   color: var(--c-text);
   text-decoration: none;
 }
@@ -64,7 +60,7 @@ h1, h2, h3 {
   color: white;
 }
 
-/* “Graue” Texte aus der App heller machen */
+/* Standard: "graue" Texte auf lila Hintergrund sollen hell sein */
 .text-slate-600,
 .text-slate-700,
 .text-slate-800,
@@ -75,13 +71,19 @@ h1, h2, h3 {
   opacity: 0.95 !important;
 }
 
-/* Borders & “bg-white” für Dark Theme */
+/* Borders & bg-white auf dunklem Hintergrund */
 .border {
   border-color: var(--c-dark) !important;
 }
 .bg-white {
   background: rgba(51, 42, 68, 0.35) !important;
-  /* In der weißen Content-Box: Standardtexte dunkel */
+}
+
+/* ---------------------------------------------
+   WICHTIG: In der weißen Content-Box ("content-card")
+   sollen alle diese "grauen" Klassen DUNKEL sein
+   -> damit Untertitel unter Überschriften lesbar sind
+---------------------------------------------- */
 .content-card .text-slate-600,
 .content-card .text-slate-700,
 .content-card .text-slate-800,
@@ -91,4 +93,13 @@ h1, h2, h3 {
   color: #5c4c7c !important; /* mittleres Logo-Lila */
   opacity: 1 !important;
 }
+
+/* Außerdem: Standardtext in der Box soll dunkellila wirken */
+.content-card p,
+.content-card li,
+.content-card label,
+.content-card input,
+.content-card textarea,
+.content-card select {
+  color: #332a44;
 }

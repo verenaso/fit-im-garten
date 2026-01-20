@@ -29,13 +29,17 @@ export default function RootLayout({ children }) {
   return (
     <html lang="de">
       <head>
+        {/* Mobile Browser UI Farbe */}
         <meta name="theme-color" content="#5C4C7C" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
       </head>
 
       <body className="min-h-screen antialiased">
         <AuthProvider>
-          {/* HEADER (bleibt lila) */}
+          {/* HEADER (lila) */}
           <header
             className="sticky top-0 z-10 backdrop-blur"
             style={{
@@ -75,21 +79,21 @@ export default function RootLayout({ children }) {
             </div>
           </header>
 
-          {/* CONTENT: Box wird weiß, Text darin dunkel-lila */}
+          {/* CONTENT: weiße Box mit dunkellila Text */}
           <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8 pb-24 sm:pb-8">
             <div
-              className="rounded-3xl p-5 shadow-sm sm:p-8"
+              className="content-card rounded-3xl p-5 shadow-sm sm:p-8"
               style={{
                 backgroundColor: "white",
                 border: "1px solid rgba(69, 57, 93, 0.25)",
-                color: "#332A44", // dunkellila Text
+                color: "#332A44",
               }}
             >
               {children}
             </div>
           </div>
 
-          {/* BOTTOM NAV (bleibt lila) */}
+          {/* BOTTOM NAV (nur Mobile, lila) */}
           <nav
             className="fixed bottom-0 left-0 right-0 z-20 backdrop-blur sm:hidden"
             style={{
@@ -105,7 +109,6 @@ export default function RootLayout({ children }) {
                 <BottomNavItem href="/workouts/neu" label="Neu" icon="➕" />
                 <BottomNavItem href="/workouts" label="Historie" icon="🕒" />
                 <BottomNavItem href="/fotos" label="Fotos" icon="📸" />
-                className="content-card rounded-3xl p-5 shadow-sm sm:p-8"
               </div>
             </div>
           </nav>
