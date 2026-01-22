@@ -11,7 +11,8 @@ export function AuthProvider({ children }) {
   const [displayName, setDisplayName] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const timeoutRef = useRef(null);
+  const watchdogRef = useRef(null);
+  const mountedRef = useRef(false);
 
   async function fetchProfile(u) {
     if (!u?.id) {
@@ -20,62 +21,80 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select('role,"Display name"')
-      .eq("id", u.id)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select('role,"Display name"')
+        .eq("id", u.id)
+        .maybeSingle();
 
-    if (error) {
+      if (error) {
+        setRole(null);
+        setDisplayName(null);
+        return;
+      }
+
+      setRole(data?.role || null);
+      setDisplayName(data?.["Display name"] || null);
+    } catch {
       setRole(null);
       setDisplayName(null);
-      return;
     }
+  }
 
-    setRole(data?.role || null);
-    setDisplayName(data?.["Display name"] || null);
+  function startWatchdog() {
+    if (watchdogRef.current) clearTimeout(watchdogRef.current);
+    watchdogRef.current = setTimeout(() => {
+      // Absolutes Failsafe: niemals endlos "Prüfe Login..."
+      if (!mountedRef.current) return;
+      setLoading(false);
+    }, 3500);
   }
 
   async function refresh() {
+    startWatchdog();
     setLoading(true);
+
     try {
-      const { data } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
+      if (error) {
+        setUser(null);
+        await fetchProfile(null);
+        return;
+      }
+
       const sessionUser = data?.session?.user || null;
       setUser(sessionUser);
       await fetchProfile(sessionUser);
+    } catch {
+      setUser(null);
+      await fetchProfile(null);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    let mounted = true;
+    mountedRef.current = true;
 
-    function startTimeoutFailsafe() {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        if (!mounted) return;
-        setLoading(false);
-      }, 8000);
-    }
-
-    startTimeoutFailsafe();
-
-    (async () => {
-      await refresh();
-    })();
+    refresh();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      startTimeoutFailsafe();
-      const nextUser = session?.user || null;
-      setUser(nextUser);
-      await fetchProfile(nextUser);
-      setLoading(false);
+      startWatchdog();
+      setLoading(true);
+
+      try {
+        const nextUser = session?.user || null;
+        setUser(nextUser);
+        await fetchProfile(nextUser);
+      } finally {
+        setLoading(false);
+      }
     });
 
     return () => {
-      mounted = false;
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      mountedRef.current = false;
+      if (watchdogRef.current) clearTimeout(watchdogRef.current);
       sub?.subscription?.unsubscribe?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
