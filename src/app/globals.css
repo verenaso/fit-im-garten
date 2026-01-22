@@ -1,92 +1,136 @@
 @import "tailwindcss";
 
+/* -----------------------------
+   Base
+------------------------------ */
+
 html,
 body {
   height: 100%;
 }
 
-/* Logo-Lila als CSS-Variablen */
 :root {
-  --c-base: #5c4c7c; /* Haupt-Lila (Logo) */
-  --c-dark: #45395d; /* dunkler für Borders/Header */
-  --c-darker: #332a44; /* sehr dunkel (Text/Flächen) */
-  --c-hover: #85799d; /* Hover */
-  --c-text: #f5f3ff; /* sehr hell */
-  --c-muted: #efeaff; /* hell gedimmt */
+  /* Brand / Theme */
+  --c-base: #5c4c7c;   /* Haupt-Lila */
+  --c-dark: #45395d;   /* dunkler */
+  --c-darker: #332a44; /* sehr dunkel */
+
+  --c-text: #f5f3ff;   /* sehr hell */
+  --c-muted: #efeaff;  /* hell gedimmt */
+  --c-hover: #85799d;  /* Hover */
+
+  /* Modern UI neutrals */
+  --bg-1: rgba(51, 42, 68, 0.92);     /* Header/Nav */
+  --bg-2: rgba(51, 42, 68, 0.72);     /* Glass */
+  --stroke: rgba(255, 255, 255, 0.18);
+  --stroke-strong: rgba(255, 255, 255, 0.28);
+
+  /* Card */
+  --card-bg: #ffffff;
+  --card-stroke: rgba(51, 42, 68, 0.14);
+  --card-shadow: 0 12px 32px rgba(51, 42, 68, 0.18);
+
+  /* Radius scale */
+  --r-lg: 18px;
+  --r-xl: 22px;
+  --r-2xl: 28px;
+
+  /* Focus ring */
+  --ring: 0 0 0 4px rgba(92, 76, 124, 0.22);
+
+  /* Layout */
+  --bottom-nav-h: 76px;
 }
 
-/* Grund-Theme: Hintergrund lila, Standardtext hell */
 body {
-  background: var(--c-base);
+  /* Subtiler Verlauf statt flat purple */
+  background:
+    radial-gradient(900px 500px at 20% 0%, rgba(255,255,255,0.14), transparent 60%),
+    radial-gradient(700px 420px at 90% 10%, rgba(255,255,255,0.10), transparent 55%),
+    linear-gradient(180deg, rgba(92, 76, 124, 1) 0%, rgba(76, 63, 103, 1) 45%, rgba(64, 53, 88, 1) 100%);
   color: var(--c-text);
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Etwas kräftiger als Standard */
-  font-weight: 500;
+  /* Moderner Default */
+  font-weight: 520;
+  letter-spacing: 0.1px;
 }
 
-/* Header/Navigation Links */
-.navlink {
-  display: inline-block;
-  border-radius: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--c-text);
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease,
-    transform 0.05s ease;
-}
-.navlink:hover {
-  background: var(--c-hover);
-  color: white;
-}
-.navlink:active {
-  transform: translateY(1px);
+a {
+  color: inherit;
 }
 
-/* Active state (Desktop) */
-.navlink.is-active,
-.navlink[aria-current="page"] {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+::selection {
+  background: rgba(255, 255, 255, 0.22);
 }
 
-/* Mobile Bottom Nav */
-.bottomnavitem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  border-radius: 1rem;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--c-text);
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease,
-    transform 0.05s ease;
-}
-.bottomnavitem:hover {
-  background: var(--c-hover);
-  color: white;
-}
-.bottomnavitem:active {
-  transform: translateY(1px);
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    scroll-behavior: auto !important;
+    animation: none !important;
+  }
 }
 
-/* Active state (Mobile) */
-.bottomnavitem.is-active,
-.bottomnavitem[aria-current="page"] {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+/* -----------------------------
+   App Shell helpers
+------------------------------ */
+
+.app-container {
+  margin: 0 auto;
+  max-width: 80rem; /* ~max-w-5xl+ */
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
-/* Standard: "graue" Texte auf lila Hintergrund sollen hell sein */
+.content-wrap {
+  padding-top: 18px;
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 12px);
+}
+
+@media (min-width: 640px) {
+  .content-wrap {
+    padding-top: 26px;
+    padding-bottom: 28px;
+  }
+}
+
+.content-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-stroke);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--card-shadow);
+  color: var(--c-darker);
+}
+
+/* Bessere Typo innerhalb der Content-Card */
+.content-card h1 {
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+  margin: 0;
+  color: var(--c-darker);
+}
+
+.content-card h2 {
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 850;
+  margin: 0;
+  color: var(--c-darker);
+}
+
+.content-card p,
+.content-card li,
+.content-card label {
+  color: var(--c-darker);
+}
+
+/* Standard: Tailwind-Graus auf lila Hintergrund -> hell */
 .text-slate-600,
 .text-slate-700,
 .text-slate-800,
@@ -97,42 +141,121 @@ body {
   opacity: 0.95 !important;
 }
 
-/* Borders & bg-white auf dunklem Hintergrund */
-.border {
-  border-color: var(--c-dark) !important;
-}
-.bg-white {
-  background: rgba(51, 42, 68, 0.35) !important;
-}
-
-/* ---------------------------------------------
-   WICHTIG: In der weißen Content-Box ("content-card")
-   sollen alle diese "grauen" Klassen DUNKEL sein
-   -> damit Untertitel unter Überschriften lesbar sind
----------------------------------------------- */
+/* Innerhalb Content-Card: diese "grauen" Klassen -> dunkler */
 .content-card .text-slate-600,
 .content-card .text-slate-700,
 .content-card .text-slate-800,
 .content-card .text-gray-500,
 .content-card .text-gray-600,
 .content-card .text-gray-700 {
-  color: #5c4c7c !important; /* mittleres Logo-Lila */
+  color: rgba(51, 42, 68, 0.72) !important;
   opacity: 1 !important;
 }
 
-/* Außerdem: Standardtext in der Box soll dunkellila wirken */
-.content-card p,
-.content-card li,
-.content-card label,
-.content-card input,
-.content-card textarea,
-.content-card select {
-  color: #332a44;
+/* -----------------------------
+   Header + Desktop Nav Links
+------------------------------ */
+
+.navlink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 14px;
+
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.15px;
+
+  color: #fff;
+  text-decoration: none;
+
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+
+  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* =========================
-   UI Kit (no tailwind @apply)
-   ========================= */
+.navlink:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.navlink:active {
+  transform: translateY(1px);
+}
+
+/* Optional: wenn du später aria-current setzt */
+.navlink[aria-current="page"] {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.30);
+}
+
+/* -----------------------------
+   Mobile Bottom Nav
+------------------------------ */
+
+.bottomnav {
+  background: rgba(51, 42, 68, 0.92);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+}
+
+.bottomnav-inner {
+  height: var(--bottom-nav-h);
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px;
+}
+
+.bottomnavitem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border-radius: 18px;
+  padding: 10px 8px;
+
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.2px;
+
+  color: rgba(245, 243, 255, 0.92);
+  text-decoration: none;
+
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottomnavitem:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.bottomnavitem:active {
+  transform: translateY(1px);
+}
+
+/* Optional: später per data-active="true" */
+.bottomnavitem[data-active="true"] {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.bottomnavicon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* -----------------------------
+   UI Kit (Buttons / Inputs / Cards / Lists)
+   (no tailwind @apply)
+------------------------------ */
 
 /* Helpers */
 .ui-row {
@@ -143,27 +266,27 @@ body {
 .ui-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .ui-section-title {
   font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-weight: 900;
+  letter-spacing: 0.15px;
   color: var(--c-darker);
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
 }
 
 .ui-muted {
-  opacity: 0.8;
+  opacity: 0.82;
 }
 
 /* Card/List */
 .ui-card {
   background: #fff;
   border: 1px solid rgba(51, 42, 68, 0.12);
-  border-radius: 16px;
-  box-shadow: 0 6px 18px rgba(51, 42, 68, 0.08);
+  border-radius: var(--r-xl);
+  box-shadow: 0 10px 26px rgba(51, 42, 68, 0.10);
 }
 
 .ui-card-pad {
@@ -178,16 +301,21 @@ body {
   flex-direction: column;
   gap: 10px;
 }
+
 .ui-list-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 12px 12px;
-  border-radius: 14px;
+
+  border-radius: 18px;
   border: 1px solid rgba(51, 42, 68, 0.10);
-  background: rgba(92, 76, 124, 0.05);
+  background: rgba(92, 76, 124, 0.06);
+
+  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
+
 .ui-list-item:active {
   transform: translateY(1px);
 }
@@ -197,12 +325,14 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 10px;
   border-radius: 999px;
+
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 850;
+
   border: 1px solid rgba(51, 42, 68, 0.14);
-  background: rgba(92, 76, 124, 0.08);
+  background: rgba(92, 76, 124, 0.10);
   color: var(--c-darker);
 }
 
@@ -212,50 +342,63 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
+
   height: 44px;
   padding: 0 14px;
-  border-radius: 14px;
-  font-weight: 700;
+  border-radius: 16px;
+
+  font-weight: 900;
   letter-spacing: 0.2px;
+
   border: 1px solid transparent;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.05s ease, background-color 0.15s ease,
-    border-color 0.15s ease, opacity 0.15s ease;
+
+  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
 }
+
 .btn:active {
   transform: translateY(1px);
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: var(--ring);
 }
 
 .btn-primary {
   background: var(--c-base);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
 }
+
 .btn-primary:hover {
-  filter: brightness(1.03);
+  filter: brightness(1.04);
 }
 
 .btn-secondary {
-  background: rgba(92, 76, 124, 0.10);
+  background: rgba(92, 76, 124, 0.12);
   color: var(--c-darker);
   border-color: rgba(51, 42, 68, 0.16);
 }
+
 .btn-secondary:hover {
-  background: rgba(92, 76, 124, 0.14);
+  background: rgba(92, 76, 124, 0.16);
 }
 
 .btn-ghost {
-  background: transparent;
-  color: var(--c-darker);
-  border-color: rgba(51, 42, 68, 0.16);
+  background: rgba(255, 255, 255, 0.10);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.18);
 }
+
 .btn-ghost:hover {
-  background: rgba(92, 76, 124, 0.08);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.24);
 }
 
 .btn-danger {
-  background: rgba(220, 38, 38, 0.10);
+  background: rgba(220, 38, 38, 0.12);
   color: rgb(153, 27, 27);
   border-color: rgba(220, 38, 38, 0.22);
 }
@@ -263,12 +406,14 @@ body {
 .btn-full {
   width: 100%;
 }
+
 .btn-sm {
   height: 38px;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 0 12px;
-  font-weight: 700;
+  font-weight: 900;
 }
+
 .btn-icon {
   width: 44px;
   padding: 0;
@@ -280,29 +425,30 @@ body {
   flex-direction: column;
   gap: 6px;
 }
+
 .label {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 900;
   color: var(--c-darker);
-  opacity: 0.92;
+  opacity: 0.95;
 }
 
 .input,
 .select,
 .textarea {
   width: 100%;
-  border-radius: 14px;
-  border: 1px solid rgba(51, 42, 68, 0.18);
+  border-radius: 16px;
+  border: 1px solid rgba(51, 42, 68, 0.16);
   background: #fff;
   color: var(--c-darker);
   padding: 12px 12px;
-  font-size: 16px; /* wichtig für iOS: verhindert Auto-Zoom */
+  font-size: 16px; /* iOS Zoom fix */
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .textarea {
-  min-height: 104px;
+  min-height: 110px;
   resize: vertical;
   padding-top: 12px;
 }
@@ -311,16 +457,16 @@ body {
 .select:focus,
 .textarea:focus {
   border-color: rgba(92, 76, 124, 0.65);
-  box-shadow: 0 0 0 4px rgba(92, 76, 124, 0.18);
+  box-shadow: var(--ring);
 }
 
 .help {
   font-size: 12px;
-  opacity: 0.75;
+  opacity: 0.78;
   color: var(--c-darker);
 }
 
-/* Toolbar (z.B. Filter/Actions oben in Seiten) */
+/* Toolbar (Filter/Actions) */
 .ui-toolbar {
   display: flex;
   gap: 10px;
@@ -335,12 +481,20 @@ body {
   align-items: center;
 }
 
-/* Loading / Empty states */
+/* Empty states */
 .ui-empty {
   padding: 14px;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px dashed rgba(51, 42, 68, 0.22);
-  background: rgba(92, 76, 124, 0.05);
+  background: rgba(92, 76, 124, 0.06);
   color: var(--c-darker);
-  opacity: 0.9;
+  opacity: 0.92;
+}
+
+/* Borders & bg-white overrides, falls irgendwo noch verwendet */
+.border {
+  border-color: rgba(51, 42, 68, 0.18) !important;
+}
+.bg-white {
+  background: #fff !important;
 }
