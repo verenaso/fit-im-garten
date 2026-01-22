@@ -5,16 +5,13 @@ body {
   height: 100%;
 }
 
-/* -----------------------------
-   Theme (clean + mobile-first)
------------------------------- */
 :root {
   /* Brand */
-  --c-base: #5c4c7c;     /* Logo-Lila */
+  --c-base: #5c4c7c;
   --c-dark: #45395d;
   --c-darker: #332a44;
 
-  /* App background is WHITE now */
+  /* Background */
   --bg: #ffffff;
 
   /* Text */
@@ -22,60 +19,55 @@ body {
   --text-muted: rgba(31, 27, 43, 0.62);
   --text-on-brand: #f5f3ff;
 
-  /* Lines / radii */
+  /* Borders / radii / shadow */
   --stroke: rgba(31, 27, 43, 0.10);
+  --stroke-2: rgba(31, 27, 43, 0.08);
   --r-lg: 14px;
   --r-xl: 18px;
   --r-2xl: 24px;
+  --shadow: 0 10px 28px rgba(31, 27, 43, 0.10);
 
   /* Layout */
   --bottom-nav-h: 76px;
 
   /* Focus */
   --ring: 0 0 0 4px rgba(92, 76, 124, 0.18);
+
+  /* Spacing scale (mobile-first) */
+  --s-1: 6px;
+  --s-2: 10px;
+  --s-3: 14px;
+  --s-4: 18px;
+  --s-5: 24px;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
   font-weight: 520;
   letter-spacing: 0.1px;
-
-  /* never allow horizontal scroll from any page */
   overflow-x: hidden;
 }
 
-a {
-  color: inherit;
-}
-
-::selection {
-  background: rgba(92, 76, 124, 0.14);
-}
+a { color: inherit; }
+::selection { background: rgba(92, 76, 124, 0.14); }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
-    scroll-behavior: auto !important;
-    animation: none !important;
-  }
+  * { transition: none !important; scroll-behavior: auto !important; animation: none !important; }
 }
 
-/* -----------------------------
-   Layout helpers
------------------------------- */
+/* -------------------------------------------------------
+   APP LAYOUT
+-------------------------------------------------------- */
 .app-container {
   margin: 0 auto;
-  max-width: 64rem; /* mobile-first, desktop later */
+  max-width: 64rem; /* mobile-first; desktop later */
   padding-left: 16px;
   padding-right: 16px;
 }
 
-/* content area spacing */
 .content-wrap {
   padding-top: 12px;
   padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 14px);
@@ -88,11 +80,7 @@ a {
   }
 }
 
-/* The "middle box" is now visually invisible:
-   - background white like page
-   - no border/shadow
-   - mobile: full-bleed feel (radius 0)
-*/
+/* We keep the wrapper, but visually it's just the page */
 .content-card {
   background: #fff;
   border: none;
@@ -101,32 +89,68 @@ a {
   border-radius: 0;
 }
 
-/* On larger screens you *may* want a slight rounding later */
-@media (min-width: 640px) {
-  .content-card {
-    border-radius: var(--r-2xl);
-  }
+/* -------------------------------------------------------
+   GLOBAL PAGE RHYTHM (makes every page look structured)
+   This is the key: consistent spacing between elements.
+-------------------------------------------------------- */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);  /* default vertical rhythm */
 }
 
-/* Typography */
-h1 {
+/* If a page uses <main> without class, we still help it */
+.page-shell main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+/* Titles */
+.page-title {
   font-size: 26px;
   line-height: 1.12;
   font-weight: 900;
   letter-spacing: -0.3px;
   margin: 0;
-  color: var(--text);
 }
 
-h2 {
+.page-subtitle {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+/* Section headings */
+.section-title {
   font-size: 18px;
   line-height: 1.2;
   font-weight: 850;
   margin: 0;
-  color: var(--text);
 }
 
-/* Tailwind gray classes inside white area -> muted */
+/* Card blocks (for forms/lists inside pages) */
+.card {
+  background: #fff;
+  border: 1px solid var(--stroke-2);
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadow);
+}
+
+.card-pad { padding: var(--s-4); }
+
+.stack { display: flex; flex-direction: column; gap: var(--s-3); }
+.stack-sm { display: flex; flex-direction: column; gap: var(--s-2); }
+
+.divider {
+  height: 1px;
+  background: rgba(31, 27, 43, 0.08);
+}
+
+/* -------------------------------------------------------
+   TYPO + tailwind gray mapping
+-------------------------------------------------------- */
 .text-slate-600,
 .text-slate-700,
 .text-slate-800,
@@ -137,81 +161,57 @@ h2 {
   opacity: 1 !important;
 }
 
-/* -----------------------------
-   Header / Nav links
------------------------------- */
+/* -------------------------------------------------------
+   HEADER / NAV
+-------------------------------------------------------- */
 .navlink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   height: 40px;
   padding: 0 12px;
   border-radius: 14px;
-
   font-size: 0.9rem;
   font-weight: 800;
   letter-spacing: 0.15px;
-
   text-decoration: none;
   color: var(--text-on-brand);
-
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.16);
-
   transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
+.navlink:hover { background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.22); }
+.navlink:active { transform: translateY(1px); }
 
-.navlink:hover {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-.navlink:active {
-  transform: translateY(1px);
-}
-
-/* -----------------------------
-   Bottom Nav (keeps brand purple)
------------------------------- */
 .bottomnavitem {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-
   border-radius: 1rem;
   padding: 0.5rem 0.75rem;
-
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-on-brand);
   text-decoration: none;
-
   background: transparent;
   border: 1px solid transparent;
-
   transition: background-color 0.15s ease, border-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
+.bottomnavitem:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.16); }
 
-.bottomnavitem:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.16);
-}
-
-/* -----------------------------
-   HeaderAuth sizing (mobile)
------------------------------- */
+/* -------------------------------------------------------
+   HEADER AUTH
+-------------------------------------------------------- */
 .header-auth {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
 }
-
 .header-auth-name {
   color: rgba(245, 243, 255, 0.92);
   font-size: 13px;
@@ -221,102 +221,48 @@ h2 {
   text-overflow: ellipsis;
   max-width: 38vw;
 }
-
 .header-auth-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   height: 34px;
   padding: 0 10px;
   border-radius: 12px;
-
   font-size: 13px;
   font-weight: 800;
-
   color: var(--c-darker);
   background: rgba(245, 243, 255, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.22);
-
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.06s ease, filter 0.15s ease;
   white-space: nowrap;
 }
+.header-auth-btn:active { transform: translateY(1px); }
+.header-auth-btn:hover { filter: brightness(1.02); }
 
-.header-auth-btn:active {
-  transform: translateY(1px);
-}
-
-@media (min-width: 640px) {
-  .header-auth-btn {
-    height: 38px;
-    padding: 0 12px;
-    font-size: 14px;
-    border-radius: 14px;
-  }
-  .header-auth-name {
-    max-width: 320px;
-    font-size: 14px;
-  }
-}
-
-/* -----------------------------
-   Simple mobile-first UI kit
------------------------------- */
-.ui-card {
-  background: #fff;
-  border: 1px solid rgba(31, 27, 43, 0.10);
-  border-radius: var(--r-xl);
-}
-
-.ui-card-pad {
-  padding: 14px;
-}
-
+/* -------------------------------------------------------
+   FORMS
+-------------------------------------------------------- */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-
   height: 44px;
   padding: 0 14px;
   border-radius: 16px;
-
   font-weight: 900;
   letter-spacing: 0.2px;
-
   border: 1px solid rgba(31, 27, 43, 0.12);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-
   transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-
-.btn:active {
-  transform: translateY(1px);
-}
-
-.btn:focus {
-  outline: none;
-  box-shadow: var(--ring);
-}
-
-.btn-primary {
-  background: var(--c-base);
-  color: #fff;
-  border-color: rgba(92, 76, 124, 0.24);
-}
-
-.btn-danger {
-  background: rgba(220, 38, 38, 0.10);
-  color: rgb(153, 27, 27);
-  border-color: rgba(220, 38, 38, 0.22);
-}
-
-.btn-full {
-  width: 100%;
-}
+.btn:active { transform: translateY(1px); }
+.btn:focus { outline: none; box-shadow: var(--ring); }
+.btn-primary { background: var(--c-base); color: #fff; border-color: rgba(92, 76, 124, 0.24); }
+.btn-danger { background: rgba(220, 38, 38, 0.10); color: rgb(153, 27, 27); border-color: rgba(220, 38, 38, 0.22); }
+.btn-full { width: 100%; }
 
 .input {
   width: 100%;
@@ -329,10 +275,7 @@ h2 {
   color: var(--text);
   outline: none;
 }
-
-.input:focus {
-  box-shadow: var(--ring);
-}
+.input:focus { box-shadow: var(--ring); }
 
 .textarea {
   width: 100%;
@@ -345,7 +288,14 @@ h2 {
   color: var(--text);
   outline: none;
 }
+.textarea:focus { box-shadow: var(--ring); }
 
-.textarea:focus {
-  box-shadow: var(--ring);
+.label {
+  font-size: 13px;
+  font-weight: 900;
+  color: rgba(31, 27, 43, 0.78);
+}
+.help {
+  font-size: 12px;
+  color: var(--text-muted);
 }

@@ -37,7 +37,7 @@ export default function RootLayout({ children }) {
 
       <body className="min-h-screen antialiased">
         <AuthProvider>
-          {/* HEADER (brand purple) */}
+          {/* HEADER */}
           <header
             className="sticky top-0 z-20 backdrop-blur"
             style={{
@@ -58,17 +58,15 @@ export default function RootLayout({ children }) {
                       priority
                     />
                   </div>
-
-                  <div className="hidden sm:block" style={{ lineHeight: 1.05, color: "white" }}>
-                    <div style={{ fontWeight: 900, letterSpacing: "0.2px" }}>Fit im Garten</div>
-                    <div style={{ fontSize: 12, opacity: 0.82 }}>Workouts · Termine · Community</div>
-                  </div>
+                  <span className="hidden sm:inline text-lg" style={{ color: "white", fontWeight: 900 }}>
+                    Fit im Garten
+                  </span>
                 </a>
 
                 <HeaderAuth />
               </div>
 
-              {/* Desktop Nav (later polish) */}
+              {/* Desktop Navigation (später polieren) */}
               <div className="mt-3 hidden sm:block">
                 <nav className="flex flex-wrap gap-2">
                   <NavLink href="/termine">Termine</NavLink>
@@ -81,15 +79,14 @@ export default function RootLayout({ children }) {
             </div>
           </header>
 
-          {/* CONTENT: wrapper stays, but card is visually invisible */}
-          <div className="app-container content-wrap">
-            <div className="content-card" style={{ padding: 0 }}>
-              {/* Mobile-first: make content feel full-bleed, but keep inner padding */}
+          {/* CONTENT: wrapper bleibt, aber wir geben globalen Rhythmus rein */}
+          <div className="app-container content-wrap page-shell">
+            <div className="content-card">
               <div style={{ padding: 16 }}>{children}</div>
             </div>
           </div>
 
-          {/* BOTTOM NAV (brand purple) */}
+          {/* BOTTOM NAV */}
           <nav
             className="fixed bottom-0 left-0 right-0 z-30 backdrop-blur sm:hidden"
             style={{

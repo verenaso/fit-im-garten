@@ -8,9 +8,10 @@ export default function HeaderAuth() {
   const router = useRouter();
   const { user, role } = useAuth();
 
-  const displayName =
-    user?.user_metadata?.display_name ||
+  // Prefer username/display name, fallback to email
+  const username =
     user?.user_metadata?.username ||
+    user?.user_metadata?.display_name ||
     user?.email ||
     "";
 
@@ -18,7 +19,7 @@ export default function HeaderAuth() {
     try {
       await supabase.auth.signOut();
     } catch (e) {
-      // egal — wir gehen trotzdem auf login
+      // ignore — we still navigate away
     } finally {
       router.push("/login");
       router.refresh();
@@ -44,8 +45,8 @@ export default function HeaderAuth() {
 
   return (
     <div className="header-auth">
-      <span className="header-auth-name" title={displayName}>
-        {displayName} {role === "admin" ? "· Admin" : ""}
+      <span className="header-auth-name" title={username}>
+        {username} {role === "admin" ? "· Admin" : ""}
       </span>
 
       <button className="header-auth-btn" onClick={onLogout} type="button">
