@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="de">
       <head>
-        <meta name="theme-color" content="#5C4C7C" />
+        <meta name="theme-color" content="#4B3F66" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
 
@@ -41,8 +41,8 @@ export default function RootLayout({ children }) {
           <header
             className="sticky top-0 z-20"
             style={{
-              background: "var(--bg-1)",
-              borderBottom: "1px solid var(--stroke)",
+              background: "rgba(63, 53, 88, 0.78)",
+              borderBottom: "1px solid rgba(255,255,255,0.10)",
               backdropFilter: "blur(10px)",
             }}
           >
@@ -62,6 +62,7 @@ export default function RootLayout({ children }) {
                       priority
                     />
                   </div>
+
                   <div className="hidden sm:block" style={{ lineHeight: 1.05 }}>
                     <div style={{ fontWeight: 900, letterSpacing: "0.2px" }}>Fit im Garten</div>
                     <div style={{ fontSize: 12, opacity: 0.82 }}>Workouts · Termine · Community</div>
@@ -71,7 +72,7 @@ export default function RootLayout({ children }) {
                 <HeaderAuth />
               </div>
 
-              {/* Desktop Nav */}
+              {/* Desktop Navigation */}
               <div className="mt-3 hidden sm:block">
                 <nav className="flex flex-wrap gap-2">
                   <NavLink href="/termine">Termine</NavLink>

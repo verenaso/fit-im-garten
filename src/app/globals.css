@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* -----------------------------
-   Base
+   Base + Theme Tokens
 ------------------------------ */
 
 html,
@@ -10,50 +10,57 @@ body {
 }
 
 :root {
-  /* Brand / Theme */
-  --c-base: #5c4c7c;   /* Haupt-Lila */
-  --c-dark: #45395d;   /* dunkler */
-  --c-darker: #332a44; /* sehr dunkel */
+  /* Darker purple palette (modern) */
+  --c-base: #4b3f66;   /* background base */
+  --c-deep: #3f3558;   /* background deep */
+  --c-surface: #544872; /* panels/cards */
+  --c-raised: #5f5382; /* primary actions / accents */
 
-  --c-text: #f5f3ff;   /* sehr hell */
-  --c-muted: #efeaff;  /* hell gedimmt */
-  --c-hover: #85799d;  /* Hover */
+  --c-text: #f4f1fa;   /* primary text on dark */
+  --c-muted: #cfc8e6;  /* muted text on dark */
+  --c-darker: #332a44; /* for rare light surfaces (if any) */
 
-  /* Modern UI neutrals */
-  --bg-1: rgba(51, 42, 68, 0.92);     /* Header/Nav */
-  --bg-2: rgba(51, 42, 68, 0.72);     /* Glass */
-  --stroke: rgba(255, 255, 255, 0.18);
-  --stroke-strong: rgba(255, 255, 255, 0.28);
+  --stroke: rgba(255, 255, 255, 0.10);
 
-  /* Card */
-  --card-bg: #ffffff;
-  --card-stroke: rgba(51, 42, 68, 0.14);
-  --card-shadow: 0 12px 32px rgba(51, 42, 68, 0.18);
+  /* Radius */
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 26px;
 
-  /* Radius scale */
-  --r-lg: 18px;
-  --r-xl: 22px;
-  --r-2xl: 28px;
+  /* Bottom nav */
+  --bottom-nav-h: 72px;
 
-  /* Focus ring */
-  --ring: 0 0 0 4px rgba(92, 76, 124, 0.22);
+  /* Neumorphism shadows */
+  --shadow-raised:
+    -10px -10px 18px rgba(255, 255, 255, 0.10),
+    10px 10px 22px rgba(0, 0, 0, 0.32);
 
-  /* Layout */
-  --bottom-nav-h: 76px;
+  --shadow-raised-soft:
+    -8px -8px 16px rgba(255, 255, 255, 0.08),
+    8px 8px 18px rgba(0, 0, 0, 0.28);
+
+  --shadow-inset:
+    inset 7px 7px 14px rgba(0, 0, 0, 0.34),
+    inset -7px -7px 14px rgba(255, 255, 255, 0.08);
+
+  --shadow-inset-soft:
+    inset 6px 6px 12px rgba(0, 0, 0, 0.30),
+    inset -6px -6px 12px rgba(255, 255, 255, 0.07);
+
+  --ring: 0 0 0 4px rgba(207, 200, 230, 0.18);
 }
 
 body {
-  /* Subtiler Verlauf statt flat purple */
+  /* Subtle ambient gradient */
   background:
-    radial-gradient(900px 500px at 20% 0%, rgba(255,255,255,0.14), transparent 60%),
-    radial-gradient(700px 420px at 90% 10%, rgba(255,255,255,0.10), transparent 55%),
-    linear-gradient(180deg, rgba(92, 76, 124, 1) 0%, rgba(76, 63, 103, 1) 45%, rgba(64, 53, 88, 1) 100%);
+    radial-gradient(900px 520px at 18% 0%, rgba(255, 255, 255, 0.12), transparent 60%),
+    radial-gradient(700px 420px at 92% 8%, rgba(255, 255, 255, 0.08), transparent 55%),
+    linear-gradient(180deg, var(--c-base) 0%, var(--c-deep) 100%);
   color: var(--c-text);
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Moderner Default */
   font-weight: 520;
   letter-spacing: 0.1px;
 }
@@ -63,7 +70,7 @@ a {
 }
 
 ::selection {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* Reduce motion */
@@ -76,44 +83,45 @@ a {
 }
 
 /* -----------------------------
-   App Shell helpers
+   App layout helpers
 ------------------------------ */
 
 .app-container {
   margin: 0 auto;
-  max-width: 80rem; /* ~max-w-5xl+ */
+  max-width: 80rem;
   padding-left: 16px;
   padding-right: 16px;
 }
 
 .content-wrap {
-  padding-top: 18px;
-  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 12px);
+  padding-top: 16px;
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 14px);
 }
 
 @media (min-width: 640px) {
   .content-wrap {
-    padding-top: 26px;
-    padding-bottom: 28px;
+    padding-top: 22px;
+    padding-bottom: 26px;
   }
 }
 
+/* Main "screen" surface (instead of white box) */
 .content-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-stroke);
+  background: rgba(84, 72, 114, 0.90); /* var(--c-surface) but slightly translucent */
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: var(--r-2xl);
-  box-shadow: var(--card-shadow);
-  color: var(--c-darker);
+  box-shadow: var(--shadow-raised);
+  color: var(--c-text);
 }
 
-/* Bessere Typo innerhalb der Content-Card */
+/* Typography inside the screen */
 .content-card h1 {
   font-size: 26px;
-  line-height: 1.15;
+  line-height: 1.12;
   font-weight: 900;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.25px;
   margin: 0;
-  color: var(--c-darker);
+  color: var(--c-text);
 }
 
 .content-card h2 {
@@ -121,16 +129,26 @@ a {
   line-height: 1.2;
   font-weight: 850;
   margin: 0;
-  color: var(--c-darker);
+  color: var(--c-text);
 }
 
 .content-card p,
 .content-card li,
 .content-card label {
-  color: var(--c-darker);
+  color: var(--c-text);
 }
 
-/* Standard: Tailwind-Graus auf lila Hintergrund -> hell */
+.content-card .text-slate-600,
+.content-card .text-slate-700,
+.content-card .text-slate-800,
+.content-card .text-gray-500,
+.content-card .text-gray-600,
+.content-card .text-gray-700 {
+  color: var(--c-muted) !important;
+  opacity: 1 !important;
+}
+
+/* Outside content-card (on background), also keep muted readable */
 .text-slate-600,
 .text-slate-700,
 .text-slate-800,
@@ -138,22 +156,11 @@ a {
 .text-gray-600,
 .text-gray-700 {
   color: var(--c-muted) !important;
-  opacity: 0.95 !important;
-}
-
-/* Innerhalb Content-Card: diese "grauen" Klassen -> dunkler */
-.content-card .text-slate-600,
-.content-card .text-slate-700,
-.content-card .text-slate-800,
-.content-card .text-gray-500,
-.content-card .text-gray-600,
-.content-card .text-gray-700 {
-  color: rgba(51, 42, 68, 0.72) !important;
-  opacity: 1 !important;
+  opacity: 0.92 !important;
 }
 
 /* -----------------------------
-   Header + Desktop Nav Links
+   Header + Desktop Nav
 ------------------------------ */
 
 .navlink {
@@ -165,41 +172,41 @@ a {
   border-radius: 14px;
 
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 850;
   letter-spacing: 0.15px;
 
-  color: #fff;
   text-decoration: none;
+  color: var(--c-text);
 
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
 
-  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .navlink:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .navlink:active {
   transform: translateY(1px);
 }
 
-/* Optional: wenn du später aria-current setzt */
+/* Optional: if later aria-current="page" */
 .navlink[aria-current="page"] {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.30);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 /* -----------------------------
-   Mobile Bottom Nav
+   Bottom Nav (closer to your old look)
 ------------------------------ */
 
 .bottomnav {
-  background: rgba(51, 42, 68, 0.92);
-  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(63, 53, 88, 0.92); /* var(--c-deep) glass */
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
   backdrop-filter: blur(10px);
 }
 
@@ -213,38 +220,32 @@ a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
 
   border-radius: 18px;
   padding: 10px 8px;
 
   font-size: 12px;
-  font-weight: 850;
-  letter-spacing: 0.2px;
+  font-weight: 800;
+  letter-spacing: 0.15px;
 
-  color: rgba(245, 243, 255, 0.92);
+  color: rgba(244, 241, 250, 0.92);
   text-decoration: none;
 
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  border: 1px solid transparent;
 
   transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .bottomnavitem:hover {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .bottomnavitem:active {
   transform: translateY(1px);
-}
-
-/* Optional: später per data-active="true" */
-.bottomnavitem[data-active="true"] {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.26);
 }
 
 .bottomnavicon {
@@ -252,9 +253,15 @@ a {
   line-height: 1;
 }
 
+/* Optional active state if we add it later */
+.bottomnavitem[data-active="true"] {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: var(--shadow-inset-soft);
+}
+
 /* -----------------------------
-   UI Kit (Buttons / Inputs / Cards / Lists)
-   (no tailwind @apply)
+   UI Kit (no tailwind @apply)
 ------------------------------ */
 
 /* Helpers */
@@ -273,20 +280,20 @@ a {
   font-size: 18px;
   font-weight: 900;
   letter-spacing: 0.15px;
-  color: var(--c-darker);
+  color: var(--c-text);
   margin: 0 0 10px 0;
 }
 
 .ui-muted {
-  opacity: 0.82;
+  opacity: 0.86;
 }
 
-/* Card/List */
+/* Cards / Panels inside the screen */
 .ui-card {
-  background: #fff;
-  border: 1px solid rgba(51, 42, 68, 0.12);
+  background: rgba(75, 63, 102, 0.55); /* slightly darker than surface */
+  border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: var(--r-xl);
-  box-shadow: 0 10px 26px rgba(51, 42, 68, 0.10);
+  box-shadow: var(--shadow-inset-soft);
 }
 
 .ui-card-pad {
@@ -296,6 +303,7 @@ a {
   padding: 18px;
 }
 
+/* Lists */
 .ui-list {
   display: flex;
   flex-direction: column;
@@ -307,11 +315,13 @@ a {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 12px;
 
+  padding: 12px 12px;
   border-radius: 18px;
-  border: 1px solid rgba(51, 42, 68, 0.10);
-  background: rgba(92, 76, 124, 0.06);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(75, 63, 102, 0.40);
+  box-shadow: var(--shadow-inset-soft);
 
   transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
@@ -331,9 +341,9 @@ a {
   font-size: 12px;
   font-weight: 850;
 
-  border: 1px solid rgba(51, 42, 68, 0.14);
-  background: rgba(92, 76, 124, 0.10);
-  color: var(--c-darker);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--c-text);
 }
 
 /* Buttons */
@@ -350,15 +360,16 @@ a {
   font-weight: 900;
   letter-spacing: 0.2px;
 
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 
-  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn:active {
   transform: translateY(1px);
+  box-shadow: var(--shadow-inset-soft);
 }
 
 .btn:focus {
@@ -367,40 +378,39 @@ a {
 }
 
 .btn-primary {
-  background: var(--c-base);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(95, 83, 130, 0.92); /* var(--c-raised) */
+  color: var(--c-text);
+  box-shadow: var(--shadow-raised-soft);
 }
 
 .btn-primary:hover {
-  filter: brightness(1.04);
+  background: rgba(95, 83, 130, 1);
 }
 
 .btn-secondary {
-  background: rgba(92, 76, 124, 0.12);
-  color: var(--c-darker);
-  border-color: rgba(51, 42, 68, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--c-text);
+  box-shadow: var(--shadow-raised-soft);
 }
 
 .btn-secondary:hover {
-  background: rgba(92, 76, 124, 0.16);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .btn-ghost {
-  background: rgba(255, 255, 255, 0.10);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: var(--c-text);
+  border-color: rgba(255, 255, 255, 0.10);
 }
 
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .btn-danger {
-  background: rgba(220, 38, 38, 0.12);
-  color: rgb(153, 27, 27);
-  border-color: rgba(220, 38, 38, 0.22);
+  background: rgba(220, 38, 38, 0.14);
+  color: #ffd7d7;
+  border-color: rgba(255, 255, 255, 0.10);
 }
 
 .btn-full {
@@ -429,8 +439,8 @@ a {
 .label {
   font-size: 13px;
   font-weight: 900;
-  color: var(--c-darker);
-  opacity: 0.95;
+  color: var(--c-text);
+  opacity: 0.92;
 }
 
 .input,
@@ -438,13 +448,17 @@ a {
 .textarea {
   width: 100%;
   border-radius: 16px;
-  border: 1px solid rgba(51, 42, 68, 0.16);
-  background: #fff;
-  color: var(--c-darker);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+
+  background: rgba(75, 63, 102, 0.55);
+  color: var(--c-text);
+
   padding: 12px 12px;
-  font-size: 16px; /* iOS Zoom fix */
+  font-size: 16px; /* iOS zoom fix */
+
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--shadow-inset);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .textarea {
@@ -456,17 +470,17 @@ a {
 .input:focus,
 .select:focus,
 .textarea:focus {
-  border-color: rgba(92, 76, 124, 0.65);
-  box-shadow: var(--ring);
+  border-color: rgba(207, 200, 230, 0.26);
+  box-shadow: var(--shadow-inset), var(--ring);
 }
 
 .help {
   font-size: 12px;
-  opacity: 0.78;
-  color: var(--c-darker);
+  opacity: 0.85;
+  color: var(--c-muted);
 }
 
-/* Toolbar (Filter/Actions) */
+/* Toolbar */
 .ui-toolbar {
   display: flex;
   gap: 10px;
@@ -485,16 +499,13 @@ a {
 .ui-empty {
   padding: 14px;
   border-radius: 16px;
-  border: 1px dashed rgba(51, 42, 68, 0.22);
-  background: rgba(92, 76, 124, 0.06);
-  color: var(--c-darker);
-  opacity: 0.92;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  background: rgba(75, 63, 102, 0.38);
+  color: var(--c-muted);
+  opacity: 0.95;
 }
 
-/* Borders & bg-white overrides, falls irgendwo noch verwendet */
+/* Generic border override */
 .border {
-  border-color: rgba(51, 42, 68, 0.18) !important;
-}
-.bg-white {
-  background: #fff !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
