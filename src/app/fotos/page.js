@@ -4,6 +4,20 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../_components/AuthProvider";
 
+/**
+ * PASSE DAS AN, falls dein Bucket anders heißt:
+ * z.B. "fotos" oder "fitimGarten" etc.
+ */
+const BUCKET = "photos";
+
+function withTimeout(promise, ms, label) {
+  let t;
+  const timeout = new Promise((_, reject) => {
+    t = setTimeout(() => reject(new Error(`${label} Timeout nach ${ms}ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
+}
+
 function fmtDate(iso) {
   try {
     return new Date(iso).toLocaleString("de-DE", {
@@ -23,49 +37,72 @@ export default function FotosPage() {
   const isAdmin = role === "admin";
 
   const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState([]);
-  const [error, setError] = useState("");
-
-  // Upload
   const [uploading, setUploading] = useState(false);
+  const [items, setItems] = useState([]);
   const [caption, setCaption] = useState("");
+  const [error, setError] = useState("");
 
   async function loadPhotos() {
     setError("");
     setLoading(true);
 
     try {
-      const { data, error: e } = await supabase
-        .from("photos")
-        .select("id, created_at, user_id, path, file_path, caption")
-        .order("created_at", { ascending: false });
+      const { data, error: e } = await withTimeout(
+        supabase
+          .from("photos")
+          .select("id, created_at, user_id, path, file_path, caption")
+          .order("created_at", { ascending: false }),
+        12000,
+        "DB: Fotos laden"
+      );
 
       if (e) throw e;
 
       const rows = data || [];
+      if (rows.length === 0) {
+        setItems([]);
+        return;
+      }
 
-      // Signed URLs erzeugen (funktioniert auch bei privaten Buckets)
-      const withUrls = await Promise.all(
-        rows.map(async (r) => {
-          const path = r.path || r.file_path;
-          if (!path) return { ...r, url: null };
+      // Nur die ersten 40 signen (Performance + keine “Hänger” bei riesigen Listen)
+      const limited = rows.slice(0, 40);
 
-          const { data: signed, error: se } = await supabase.storage
-            .from("photos")
-            .createSignedUrl(path, 60 * 60); // 1h
+      const paths = limited.map((r) => r.path || r.file_path).filter(Boolean);
+      const pathSet = new Set(paths);
 
-          if (se) {
-            return { ...r, url: null, urlError: se.message };
+      const signedMap = {};
+      if (pathSet.size > 0) {
+        const { data: signedData, error: se } = await withTimeout(
+          supabase.storage.from(BUCKET).createSignedUrls([...pathSet], 60 * 60),
+          12000,
+          "Storage: Signed URLs"
+        );
+
+        if (se) throw se;
+
+        for (const entry of signedData || []) {
+          // entry: { path, signedUrl, error }
+          if (entry?.path && entry?.signedUrl && !entry?.error) {
+            signedMap[entry.path] = entry.signedUrl;
           }
+        }
+      }
 
-          return { ...r, url: signed?.signedUrl || null };
-        })
-      );
+      const withUrls = rows.map((r) => {
+        const p = r.path || r.file_path;
+        return {
+          ...r,
+          url: p ? signedMap[p] || null : null,
+        };
+      });
 
       setItems(withUrls);
     } catch (e) {
-      setError(e?.message || "Fehler beim Laden der Fotos.");
       setItems([]);
+      setError(
+        (e?.message || "Fehler beim Laden der Fotos.") +
+          "\n\nHinweis: Wenn hier etwas zu Policies/Bucket steht, ist meist die Storage-Policy oder der Bucket-Name falsch."
+      );
     } finally {
       setLoading(false);
     }
@@ -93,30 +130,43 @@ export default function FotosPage() {
     setError("");
 
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
       const safeExt = ext.length <= 5 ? ext : "jpg";
-      const fileName = `${crypto.randomUUID()}.${safeExt}`;
+
+      // randomUUID ist ok, aber wir machen Fallback
+      const id =
+        (globalThis.crypto && crypto.randomUUID && crypto.randomUUID()) ||
+        `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+      const fileName = `${id}.${safeExt}`;
       const path = `${user.id}/${fileName}`;
 
-      const { error: upErr } = await supabase.storage
-        .from("photos")
-        .upload(path, file, { upsert: false });
-
+      const { error: upErr } = await withTimeout(
+        supabase.storage.from(BUCKET).upload(path, file, { upsert: false }),
+        20000,
+        "Storage: Upload"
+      );
       if (upErr) throw upErr;
 
-      const { error: insErr } = await supabase.from("photos").insert({
-        user_id: user.id,
-        path,
-        caption: caption.trim() || null,
-      });
-
+      const { error: insErr } = await withTimeout(
+        supabase.from("photos").insert({
+          user_id: user.id,
+          path,
+          caption: caption.trim() || null,
+        }),
+        12000,
+        "DB: Foto-Row anlegen"
+      );
       if (insErr) throw insErr;
 
       setCaption("");
       e.target.reset();
       await loadPhotos();
     } catch (e) {
-      setError(e?.message || "Upload fehlgeschlagen.");
+      setError(
+        (e?.message || "Upload fehlgeschlagen.") +
+          "\n\nTypisch: Storage Insert/Upload wird durch Policies blockiert (RLS/Storage Policies)."
+      );
     } finally {
       setUploading(false);
     }
@@ -129,24 +179,25 @@ export default function FotosPage() {
     setError("");
 
     try {
-      // erst row holen, dann storage delete
-      const { data, error: fe } = await supabase
-        .from("photos")
-        .select("id, path, file_path")
-        .eq("id", photoId)
-        .single();
-
+      const { data, error: fe } = await withTimeout(
+        supabase.from("photos").select("id, path, file_path").eq("id", photoId).single(),
+        12000,
+        "DB: Foto laden"
+      );
       if (fe) throw fe;
 
       const path = data.path || data.file_path;
 
-      // delete db row
-      const { error: de } = await supabase.from("photos").delete().eq("id", photoId);
+      const { error: de } = await withTimeout(
+        supabase.from("photos").delete().eq("id", photoId),
+        12000,
+        "DB: Foto löschen"
+      );
       if (de) throw de;
 
-      // delete storage object (best effort)
       if (path) {
-        await supabase.storage.from("photos").remove([path]);
+        // Best effort
+        await supabase.storage.from(BUCKET).remove([path]);
       }
 
       await loadPhotos();
@@ -171,75 +222,94 @@ export default function FotosPage() {
             Eingeloggt {isAdmin ? "(Admin)" : "(Mitglied)"}
           </p>
 
-          <form onSubmit={onUpload} className="mt-6 ui-card ui-card-pad space-y-3">
-            <div className="ui-section-title" style={{ marginBottom: 0 }}>
-              Foto hochladen
-            </div>
+          <div className="mt-6 ui-surface">
+            <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 10 }}>Foto hochladen</div>
 
-            <div className="field">
-              <div className="label">Bilddatei</div>
-              <input className="input" name="file" type="file" accept="image/*" required />
-            </div>
+            <form onSubmit={onUpload} className="space-y-3">
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6, color: "rgba(245,243,255,0.92)" }}>
+                  Bilddatei
+                </div>
+                <input className="input" name="file" type="file" accept="image/*" required />
+              </div>
 
-            <div className="field">
-              <div className="label">Beschreibung (optional)</div>
-              <input
-                className="input"
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                placeholder="z.B. Workout am Sonntag 💪"
-              />
-            </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 6, color: "rgba(245,243,255,0.92)" }}>
+                  Beschreibung (optional)
+                </div>
+                <input
+                  className="input"
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  placeholder="z.B. Workout am Sonntag 💪"
+                />
+              </div>
 
-            <button className="btn btn-primary btn-full" type="submit" disabled={uploading}>
-              {uploading ? "Lade hoch…" : "Hochladen"}
-            </button>
+              <button className="btn btn-primary btn-full" type="submit" disabled={uploading}>
+                {uploading ? "Lade hoch…" : "Hochladen"}
+              </button>
 
-            {error ? <div className="ui-empty">{error}</div> : null}
-          </form>
+              {error ? (
+                <pre
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    marginTop: 10,
+                    padding: 12,
+                    borderRadius: 14,
+                    background: "rgba(255,255,255,0.10)",
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    color: "rgba(245,243,255,0.92)",
+                    fontSize: 12,
+                  }}
+                >
+                  {error}
+                </pre>
+              ) : null}
+            </form>
+          </div>
 
           <div className="mt-6">
-            <div className="font-semibold">Uploads</div>
+            <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 10 }}>Uploads</div>
 
             {loading ? (
               <p className="mt-3 text-gray-600">Lade…</p>
             ) : items.length === 0 ? (
               <p className="mt-3 text-gray-600">Noch keine Fotos.</p>
             ) : (
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {items.map((p) => (
-                  <div key={p.id} className="ui-card ui-card-pad">
+                  <div key={p.id} className="ui-surface-strong">
                     {p.url ? (
                       <img
                         src={p.url}
                         alt={p.caption || "Foto"}
                         style={{
                           width: "100%",
-                          height: 220,
+                          height: 240,
                           objectFit: "cover",
                           borderRadius: 14,
-                          border: "1px solid rgba(31,27,43,0.08)",
-                          background: "rgba(0,0,0,0.03)",
+                          border: "1px solid rgba(255,255,255,0.18)",
+                          background: "rgba(255,255,255,0.06)",
                         }}
                       />
                     ) : (
-                      <div className="ui-empty">
-                        Bild konnte nicht geladen werden.
-                        {p.urlError ? (
-                          <div className="mt-2" style={{ fontSize: 12 }}>
-                            {p.urlError}
-                          </div>
-                        ) : null}
+                      <div style={{ opacity: 0.9, fontSize: 13 }}>
+                        Bild konnte nicht geladen werden (keine URL).
                       </div>
                     )}
 
-                    <div className="mt-3">
-                      <div className="text-sm text-gray-700">{fmtDate(p.created_at)}</div>
-                      {p.caption ? <div className="mt-1">{p.caption}</div> : null}
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 12, opacity: 0.85 }}>{fmtDate(p.created_at)}</div>
+                      {p.caption ? <div style={{ marginTop: 4 }}>{p.caption}</div> : null}
                     </div>
 
                     {isAdmin ? (
-                      <button className="mt-3 btn btn-danger btn-sm btn-full" onClick={() => onDelete(p.id)} type="button">
+                      <button
+                        className="btn btn-danger btn-full"
+                        style={{ marginTop: 10 }}
+                        onClick={() => onDelete(p.id)}
+                        type="button"
+                      >
                         Löschen
                       </button>
                     ) : null}

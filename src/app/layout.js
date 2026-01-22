@@ -38,15 +38,8 @@ export default function RootLayout({ children }) {
       <body className="min-h-screen antialiased">
         <AuthProvider>
           {/* HEADER */}
-          <header
-            className="sticky top-0 z-20 backdrop-blur"
-            style={{
-              backgroundColor: "rgba(51, 42, 68, 0.88)",
-              borderBottom: "1px solid rgba(255,255,255,0.14)",
-              color: "var(--text-on-bg)",
-            }}
-          >
-            <div className="app-container" style={{ paddingTop: 12, paddingBottom: 12 }}>
+          <header className="app-header">
+            <div className="app-container app-header-inner">
               <div className="flex items-center justify-between gap-3">
                 <a href="/" className="flex items-center gap-3" style={{ textDecoration: "none" }}>
                   <div className="relative h-10 w-24 sm:h-12 sm:w-28">
@@ -81,22 +74,11 @@ export default function RootLayout({ children }) {
             </div>
           </header>
 
-          {/* CONTENT */}
-          <div className="app-container content-wrap">
-            <div className="content-card" style={{ padding: 18 }}>
-              {children}
-            </div>
-          </div>
+          {/* CONTENT: kein Card-Container mehr */}
+          <div className="app-container app-content">{children}</div>
 
           {/* BOTTOM NAV */}
-          <nav
-            className="fixed bottom-0 left-0 right-0 z-30 backdrop-blur sm:hidden"
-            style={{
-              backgroundColor: "rgba(51, 42, 68, 0.92)",
-              borderTop: "1px solid rgba(255,255,255,0.14)",
-              color: "var(--text-on-bg)",
-            }}
-          >
+          <nav className="app-bottomnav sm:hidden">
             <div className="app-container" style={{ paddingTop: 10, paddingBottom: 10 }}>
               <div className="grid grid-cols-5 gap-2">
                 <BottomNavItem href="/termine" label="Termine" icon="📅" />
