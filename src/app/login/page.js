@@ -21,13 +21,11 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  // Display Name nur beim Signup
   const [displayName, setDisplayName] = useState("");
 
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
 
   const canSubmit = useMemo(() => {
     if (!email.trim() || !password) return false;
@@ -36,41 +34,32 @@ export default function LoginPage() {
   }, [email, password, displayName, isSignup]);
 
   useEffect(() => {
-    setMsg("");
     setErr("");
+    setMsg("");
   }, [mode]);
 
   async function onSubmit(e) {
     e.preventDefault();
+    if (loading) return;
+
     setErr("");
     setMsg("");
     setLoading(true);
 
     try {
       const cleanEmail = email.trim();
-      const cleanPw = password;
-
-      if (!cleanEmail || !cleanPw) {
-        setErr("Bitte E-Mail und Passwort eingeben.");
-        return;
-      }
 
       if (isSignup) {
         const dn = normalizeDisplayName(displayName);
-
         if (!isValidDisplayName(dn)) {
           setErr("Bitte einen Nutzernamen mit 3–24 Zeichen eingeben.");
           return;
         }
 
-        // WICHTIG: Wir speichern den Namen in auth.user_metadata (das darf das Frontend),
-        // der DB-Trigger schreibt ihn dann zuverlässig in public.profiles."Display name".
         const { data, error } = await supabase.auth.signUp({
           email: cleanEmail,
-          password: cleanPw,
-          options: {
-            data: { display_name: dn },
-          },
+          password,
+          options: { data: { display_name: dn } },
         });
 
         if (error) throw error;
@@ -78,25 +67,21 @@ export default function LoginPage() {
         if (data?.session) {
           router.push("/termine");
         } else {
-          setMsg(
-            "Registrierung erfolgreich. Bitte prüfe ggf. deine E-Mails zur Bestätigung. Danach kannst du dich einloggen."
-          );
+          setMsg("Registrierung ok. Bitte ggf. E-Mail bestätigen und dann einloggen.");
           setMode("login");
         }
-        return;
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+
+        if (error) throw error;
+
+        if (data?.session) router.push("/termine");
       }
-
-      // Login
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: cleanPw,
-      });
-
-      if (error) throw error;
-
-      if (data?.session) router.push("/termine");
     } catch (e2) {
-      setErr(e2?.message || "Unbekannter Fehler.");
+      setErr(e2?.message || "Login/Signup fehlgeschlagen.");
     } finally {
       setLoading(false);
     }
@@ -155,9 +140,7 @@ export default function LoginPage() {
                 autoComplete="nickname"
                 required
               />
-              <div className="help">
-                Wird bei Abstimmungen, Forum und Fotos angezeigt. (3–24 Zeichen)
-              </div>
+              <div className="help">Wird bei Abstimmungen, Forum und Fotos angezeigt.</div>
             </div>
           ) : null}
 

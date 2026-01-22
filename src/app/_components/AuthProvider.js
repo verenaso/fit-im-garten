@@ -14,6 +14,14 @@ export function AuthProvider({ children }) {
   const watchdogRef = useRef(null);
   const mountedRef = useRef(false);
 
+  function startWatchdog() {
+    if (watchdogRef.current) clearTimeout(watchdogRef.current);
+    watchdogRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      setLoading(false);
+    }, 3500);
+  }
+
   async function fetchProfile(u) {
     if (!u?.id) {
       setRole(null);
@@ -24,7 +32,7 @@ export function AuthProvider({ children }) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select('role,"Display name"')
+        .select("role, display_name")
         .eq("id", u.id)
         .maybeSingle();
 
@@ -35,20 +43,11 @@ export function AuthProvider({ children }) {
       }
 
       setRole(data?.role || null);
-      setDisplayName(data?.["Display name"] || null);
+      setDisplayName(data?.display_name || null);
     } catch {
       setRole(null);
       setDisplayName(null);
     }
-  }
-
-  function startWatchdog() {
-    if (watchdogRef.current) clearTimeout(watchdogRef.current);
-    watchdogRef.current = setTimeout(() => {
-      // Absolutes Failsafe: niemals endlos "Prüfe Login..."
-      if (!mountedRef.current) return;
-      setLoading(false);
-    }, 3500);
   }
 
   async function refresh() {
@@ -76,13 +75,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     mountedRef.current = true;
-
     refresh();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       startWatchdog();
       setLoading(true);
-
       try {
         const nextUser = session?.user || null;
         setUser(nextUser);
@@ -101,13 +98,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const value = useMemo(
-    () => ({
-      user,
-      role,
-      displayName,
-      loading,
-      refresh,
-    }),
+    () => ({ user, role, displayName, loading, refresh }),
     [user, role, displayName, loading]
   );
 

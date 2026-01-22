@@ -84,7 +84,6 @@ export default function PollWidget() {
       for (const row of countData || []) countMap[row.option_id] = row.votes;
       setCounts(countMap);
 
-      // votes laden
       const { data: allVotes, error: votesErr } = await supabase
         .from("poll_votes")
         .select("option_id,user_id")
@@ -94,19 +93,16 @@ export default function PollWidget() {
 
       const userIds = uniq((allVotes || []).map((v) => v.user_id).filter(Boolean));
 
-      // Profile map laden (Display Names)
       let profileMap = {};
       if (userIds.length > 0) {
         const { data: profs, error: profErr } = await supabase
           .from("profiles")
-          .select('id,"Display name"')
+          .select("id, display_name")
           .in("id", userIds);
 
         if (profErr) throw profErr;
 
-        for (const p of profs || []) {
-          profileMap[p.id] = p?.["Display name"] || null;
-        }
+        for (const p of profs || []) profileMap[p.id] = p?.display_name || null;
       }
 
       const map = {};
@@ -122,7 +118,6 @@ export default function PollWidget() {
       }
       setNamesByOption(cleaned);
 
-      // my votes
       if (user?.id) {
         const { data: myVoteRows, error: myVoteErr } = await supabase
           .from("poll_votes")
@@ -256,12 +251,7 @@ export default function PollWidget() {
             <span className="ui-badge">keine aktive Abstimmung</span>
           )}
         </div>
-
-        {isAdmin ? (
-          <div className="ui-toolbar-right">
-            {/* Admin UI bleibt wie bei dir, falls schon drin – wenn nicht, sag kurz, dann integriere ich es wieder komplett */}
-          </div>
-        ) : null}
+        {isAdmin ? <div className="ui-toolbar-right" /> : null}
       </div>
 
       {error ? (

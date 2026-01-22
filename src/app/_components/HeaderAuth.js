@@ -31,9 +31,7 @@ export default function HeaderAuth() {
   return (
     <div className="ui-row" style={{ gap: 10 }}>
       <div style={{ textAlign: "right", lineHeight: 1.1 }}>
-        <div style={{ fontWeight: 800, fontSize: 13 }}>
-          {displayName ? displayName : "Eingeloggt"}
-        </div>
+        <div style={{ fontWeight: 800, fontSize: 13 }}>{displayName || "Eingeloggt"}</div>
       </div>
 
       <button className="btn btn-ghost btn-sm" onClick={onLogout} type="button">
