@@ -5,41 +5,47 @@ body {
   height: 100%;
 }
 
+/* -----------------------------
+   Theme (clean + mobile-first)
+------------------------------ */
 :root {
   /* Brand */
-  --c-base: #5c4c7c;
+  --c-base: #5c4c7c;     /* Logo-Lila */
   --c-dark: #45395d;
   --c-darker: #332a44;
 
-  /* Background */
-  --bg: #5c4c7c;
-  --text-on-bg: #f5f3ff;
-  --muted-on-bg: rgba(245, 243, 255, 0.86);
+  /* App background is WHITE now */
+  --bg: #ffffff;
 
-  /* Surface blocks (nur für einzelne Sections, nicht als globale Mittelbox) */
-  --surface: rgba(255, 255, 255, 0.10);
-  --surface-strong: rgba(255, 255, 255, 0.14);
-  --stroke: rgba(255, 255, 255, 0.16);
+  /* Text */
+  --text: #1f1b2b;
+  --text-muted: rgba(31, 27, 43, 0.62);
+  --text-on-brand: #f5f3ff;
 
-  /* Radius / shadow */
-  --r-lg: 16px;
-  --r-xl: 20px;
+  /* Lines / radii */
+  --stroke: rgba(31, 27, 43, 0.10);
+  --r-lg: 14px;
+  --r-xl: 18px;
+  --r-2xl: 24px;
 
   /* Layout */
   --bottom-nav-h: 76px;
 
   /* Focus */
-  --ring: 0 0 0 4px rgba(245, 243, 255, 0.18);
+  --ring: 0 0 0 4px rgba(92, 76, 124, 0.18);
 }
 
 body {
   background: var(--bg);
-  color: var(--text-on-bg);
+  color: var(--text);
+
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
   font-weight: 520;
   letter-spacing: 0.1px;
 
+  /* never allow horizontal scroll from any page */
   overflow-x: hidden;
 }
 
@@ -48,7 +54,7 @@ a {
 }
 
 ::selection {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(92, 76, 124, 0.14);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -60,62 +66,56 @@ a {
 }
 
 /* -----------------------------
-   Layout
+   Layout helpers
 ------------------------------ */
 .app-container {
   margin: 0 auto;
-  max-width: 80rem;
+  max-width: 64rem; /* mobile-first, desktop later */
   padding-left: 16px;
   padding-right: 16px;
 }
 
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  backdrop-filter: blur(10px);
-  background: rgba(51, 42, 68, 0.88);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.app-header-inner {
+/* content area spacing */
+.content-wrap {
   padding-top: 12px;
-  padding-bottom: 12px;
-}
-
-.app-content {
-  padding-top: 18px;
   padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 14px);
 }
 
 @media (min-width: 640px) {
-  .app-content {
-    padding-top: 26px;
-    padding-bottom: 26px;
+  .content-wrap {
+    padding-top: 18px;
+    padding-bottom: 22px;
   }
 }
 
-.app-bottomnav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 30;
-  backdrop-filter: blur(10px);
-  background: rgba(51, 42, 68, 0.92);
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+/* The "middle box" is now visually invisible:
+   - background white like page
+   - no border/shadow
+   - mobile: full-bleed feel (radius 0)
+*/
+.content-card {
+  background: #fff;
+  border: none;
+  box-shadow: none;
+  color: var(--text);
+  border-radius: 0;
 }
 
-/* -----------------------------
-   Typography (clean)
------------------------------- */
+/* On larger screens you *may* want a slight rounding later */
+@media (min-width: 640px) {
+  .content-card {
+    border-radius: var(--r-2xl);
+  }
+}
+
+/* Typography */
 h1 {
   font-size: 26px;
   line-height: 1.12;
   font-weight: 900;
   letter-spacing: -0.3px;
   margin: 0;
-  color: var(--text-on-bg);
+  color: var(--text);
 }
 
 h2 {
@@ -123,22 +123,22 @@ h2 {
   line-height: 1.2;
   font-weight: 850;
   margin: 0;
-  color: var(--text-on-bg);
+  color: var(--text);
 }
 
-/* Tailwind grey on bg -> muted-on-bg */
+/* Tailwind gray classes inside white area -> muted */
 .text-slate-600,
 .text-slate-700,
 .text-slate-800,
 .text-gray-500,
 .text-gray-600,
 .text-gray-700 {
-  color: var(--muted-on-bg) !important;
+  color: var(--text-muted) !important;
   opacity: 1 !important;
 }
 
 /* -----------------------------
-   Navigation
+   Header / Nav links
 ------------------------------ */
 .navlink {
   display: inline-flex;
@@ -154,17 +154,17 @@ h2 {
   letter-spacing: 0.15px;
 
   text-decoration: none;
-  color: var(--text-on-bg);
+  color: var(--text-on-brand);
 
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
 
   transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .navlink:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.16);
   border-color: rgba(255, 255, 255, 0.22);
 }
 
@@ -172,6 +172,9 @@ h2 {
   transform: translateY(1px);
 }
 
+/* -----------------------------
+   Bottom Nav (keeps brand purple)
+------------------------------ */
 .bottomnavitem {
   display: flex;
   flex-direction: column;
@@ -184,7 +187,7 @@ h2 {
 
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--text-on-bg);
+  color: var(--text-on-brand);
   text-decoration: none;
 
   background: transparent;
@@ -195,12 +198,12 @@ h2 {
 }
 
 .bottomnavitem:hover {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 /* -----------------------------
-   Header Auth (kleiner, kein overflow)
+   HeaderAuth sizing (mobile)
 ------------------------------ */
 .header-auth {
   display: flex;
@@ -232,8 +235,8 @@ h2 {
   font-weight: 800;
 
   color: var(--c-darker);
-  background: rgba(245, 243, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(245, 243, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.22);
 
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.06s ease, filter 0.15s ease;
@@ -258,20 +261,15 @@ h2 {
 }
 
 /* -----------------------------
-   Minimal UI kit (sections)
-   (wir nutzen surfaces nur gezielt)
+   Simple mobile-first UI kit
 ------------------------------ */
-.ui-surface {
-  background: var(--surface);
-  border: 1px solid var(--stroke);
+.ui-card {
+  background: #fff;
+  border: 1px solid rgba(31, 27, 43, 0.10);
   border-radius: var(--r-xl);
-  padding: 14px;
 }
 
-.ui-surface-strong {
-  background: var(--surface-strong);
-  border: 1px solid var(--stroke);
-  border-radius: var(--r-xl);
+.ui-card-pad {
   padding: 14px;
 }
 
@@ -288,41 +286,47 @@ h2 {
   font-weight: 900;
   letter-spacing: 0.2px;
 
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(31, 27, 43, 0.12);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 
-  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.btn:active { transform: translateY(1px); }
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:focus {
+  outline: none;
+  box-shadow: var(--ring);
+}
 
 .btn-primary {
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--c-darker);
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.14);
-  color: var(--text-on-bg);
+  background: var(--c-base);
+  color: #fff;
+  border-color: rgba(92, 76, 124, 0.24);
 }
 
 .btn-danger {
-  background: rgba(220, 38, 38, 0.18);
-  color: #fff;
+  background: rgba(220, 38, 38, 0.10);
+  color: rgb(153, 27, 27);
+  border-color: rgba(220, 38, 38, 0.22);
 }
 
-.btn-full { width: 100%; }
+.btn-full {
+  width: 100%;
+}
 
 .input {
   width: 100%;
   height: 44px;
   border-radius: 16px;
+  border: 1px solid rgba(31, 27, 43, 0.14);
   padding: 0 12px;
   font-size: 16px;
-  color: var(--c-darker);
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #fff;
+  color: var(--text);
   outline: none;
 }
 
@@ -334,11 +338,11 @@ h2 {
   width: 100%;
   min-height: 110px;
   border-radius: 16px;
+  border: 1px solid rgba(31, 27, 43, 0.14);
   padding: 12px;
   font-size: 16px;
-  color: var(--c-darker);
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #fff;
+  color: var(--text);
   outline: none;
 }
 
