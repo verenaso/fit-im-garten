@@ -4,8 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 
-function normalizeDisplayName(s) {
+function normalizeUsername(s) {
   return (s || "").trim().replace(/\s+/g, " ");
+}
+
+function isValidUsername(u) {
+  const s = normalizeUsername(u);
+  // simple MVP-Regel: 3–24 Zeichen
+  return s.length >= 3 && s.length <= 24;
 }
 
 export default function LoginPage() {
@@ -17,8 +23,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // NEW: Display Name for signup
-  const [displayName, setDisplayName] = useState("");
+  // Username nur beim Signup
+  const [username, setUsername] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
@@ -26,29 +32,42 @@ export default function LoginPage() {
 
   const canSubmit = useMemo(() => {
     if (!email.trim() || !password) return false;
-    if (isSignup) {
-      const dn = normalizeDisplayName(displayName);
-      if (dn.length < 3) return false;
-    }
+    if (isSignup) return isValidUsername(username);
     return true;
-  }, [email, password, displayName, isSignup]);
+  }, [email, password, username, isSignup]);
 
   useEffect(() => {
     setMsg("");
     setErr("");
   }, [mode]);
 
-  async function upsertProfile(userId, dn, userEmail) {
-    // Wir speichern in profiles.display_name (und optional email, falls du es auch drin hast)
-    // Falls du KEINE Spalte "email" in profiles hast, kannst du die email-Zeile unten entfernen.
-    const payload = {
-      id: userId,
-      display_name: dn,
-      email: userEmail || null,
-    };
+  async function ensureProfileUsername(userId, desiredUsername) {
+    // Fallback: wir versuchen zusätzlich, den Username in profiles zu schreiben.
+    // (Der Trigger macht es normalerweise sowieso.)
+    const u = normalizeUsername(desiredUsername);
+    if (!u) return;
 
-    const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ id: userId, username: u }, { onConflict: "id" });
+
     if (error) throw error;
+  }
+
+  function mapNiceError(e) {
+    const m = e?.message || "";
+
+    // Supabase/Postgres unique violation
+    // Kann in Messages unterschiedlich auftauchen, daher mehrere Checks
+    if (
+      m.toLowerCase().includes("duplicate key") ||
+      m.toLowerCase().includes("unique") ||
+      m.toLowerCase().includes("profiles_username_unique")
+    ) {
+      return "Dieser Nutzername ist leider schon vergeben. Bitte wähle einen anderen.";
+    }
+
+    return m || "Unbekannter Fehler.";
   }
 
   async function onSubmit(e) {
@@ -67,32 +86,30 @@ export default function LoginPage() {
       }
 
       if (isSignup) {
-        const dn = normalizeDisplayName(displayName);
-        if (dn.length < 3) {
-          setErr("Bitte einen Nutzernamen mit mindestens 3 Zeichen eingeben.");
+        const u = normalizeUsername(username);
+
+        if (!isValidUsername(u)) {
+          setErr("Bitte einen Nutzernamen mit 3–24 Zeichen eingeben.");
           return;
         }
 
+        // 1) Signup inkl. user_metadata.username (Trigger nutzt genau das)
         const { data, error } = await supabase.auth.signUp({
           email: cleanEmail,
           password: cleanPw,
           options: {
-            // optional: auch als user_metadata speichern
-            data: { display_name: dn },
+            data: { username: u },
           },
         });
 
         if (error) throw error;
 
-        // Wenn Email-Confirmation aktiv ist, kann session null sein.
-        // user sollte aber meistens verfügbar sein.
-        const newUserId = data?.user?.id;
-
-        if (newUserId) {
-          // Profile schreiben (RLS muss erlauben: user darf eigene profile row schreiben)
-          await upsertProfile(newUserId, dn, cleanEmail);
+        // 2) Optionaler Fallback: profiles upsert (falls Trigger zeitlich verzögert oder deaktiviert)
+        if (data?.user?.id) {
+          await ensureProfileUsername(data.user.id, u);
         }
 
+        // Wenn Email confirmation aktiv ist, ist session evtl. null
         if (data?.session) {
           router.push("/termine");
         } else {
@@ -101,6 +118,7 @@ export default function LoginPage() {
           );
           setMode("login");
         }
+
         return;
       }
 
@@ -109,14 +127,11 @@ export default function LoginPage() {
         email: cleanEmail,
         password: cleanPw,
       });
-
       if (error) throw error;
 
-      // Optional: Falls jemand alt registriert ist ohne display_name,
-      // kannst du hier später einen “Username fehlt” Flow einbauen.
       if (data?.session) router.push("/termine");
     } catch (e2) {
-      setErr(e2?.message || "Unbekannter Fehler.");
+      setErr(mapNiceError(e2));
     } finally {
       setLoading(false);
     }
@@ -169,13 +184,15 @@ export default function LoginPage() {
               <div className="label">Nutzername</div>
               <input
                 className="input"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="z.B. Verena / Trainerin / …"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="z.B. Verena"
                 autoComplete="nickname"
                 required
               />
-              <div className="help">Dieser Name wird z.B. bei Abstimmungen angezeigt.</div>
+              <div className="help">
+                Wird in Forum, Abstimmungen und bei Foto-Uploads angezeigt. (3–24 Zeichen)
+              </div>
             </div>
           ) : null}
 
