@@ -14,7 +14,7 @@ function uniq(arr) {
 
 function maskUserId(id) {
   if (!id) return "Unbekannt";
-  return `${id.slice(0, 6)}…${id.slice(-4)}`;
+  return `${String(id).slice(0, 6)}…${String(id).slice(-4)}`;
 }
 
 function toLocalDatetimeInputValue(iso) {
@@ -52,6 +52,9 @@ export default function PollWidget() {
   const [namesByOption, setNamesByOption] = useState({});
   const [error, setError] = useState("");
 
+  // Debug
+  const [debugNameStats, setDebugNameStats] = useState(null);
+
   // Admin editor
   const [adminOpen, setAdminOpen] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -77,12 +80,67 @@ export default function PollWidget() {
 
   const closed = isPollClosed(poll);
 
+  async function getNameMapForUserIds(userIds) {
+    const ids = uniq((userIds || []).filter(Boolean).map((x) => String(x)));
+    if (ids.length === 0) return { map: {}, stats: { ids: 0, found: 0, via: "none" } };
+
+    // 1) RPC
+    try {
+      const { data: rows, error: rpcErr } = await supabase.rpc("get_profile_names", { ids });
+      if (rpcErr) throw rpcErr;
+
+      const map = {};
+      for (const r of rows || []) {
+        const k = String(r.id);
+        const n = (r.name || "").trim();
+        if (n) map[k] = n;
+      }
+
+      const found = Object.keys(map).length;
+      if (found > 0) return { map, stats: { ids: ids.length, found, via: "rpc" } };
+
+      // Wenn RPC zwar läuft, aber nix zurückgibt: weiter mit Fallback
+    } catch (e) {
+      // RPC Fehler -> wir versuchen Fallback und zeigen den Fehler nicht sofort,
+      // damit nicht alles kaputt wirkt. Für Admin packen wir’s in Stats.
+      // (Der eigentliche error wird unten nur gesetzt, wenn auch Fallback scheitert.)
+      // eslint-disable-next-line no-unused-vars
+      const _ = e;
+    }
+
+    // 2) Fallback: direkt profiles lesen (falls Policy vorhanden)
+    try {
+      const { data: profs, error: pe } = await supabase
+        .from("profiles")
+        .select('id, "Display name", display_name, username')
+        .in("id", ids);
+
+      if (pe) throw pe;
+
+      const map = {};
+      for (const p of profs || []) {
+        const k = String(p.id);
+        const n =
+          String(p["Display name"] || "").trim() ||
+          String(p.display_name || "").trim() ||
+          String(p.username || "").trim();
+        if (n) map[k] = n;
+      }
+
+      const found = Object.keys(map).length;
+      return { map, stats: { ids: ids.length, found, via: "profiles-fallback" } };
+    } catch (e) {
+      // beides fehlgeschlagen -> wir werfen, damit es oben angezeigt wird
+      throw e;
+    }
+  }
+
   async function loadActivePoll() {
     setError("");
     setLoading(true);
+    setDebugNameStats(null);
 
     try {
-      // 1) aktive Umfrage
       const { data: pollData, error: pollErr } = await supabase
         .from("polls")
         .select("*")
@@ -104,7 +162,6 @@ export default function PollWidget() {
 
       setPoll(pollData);
 
-      // 2) Optionen
       const { data: optData, error: optErr } = await supabase
         .from("poll_options")
         .select("*")
@@ -115,7 +172,6 @@ export default function PollWidget() {
       if (optErr) throw optErr;
       setOptions(optData || []);
 
-      // 3) Counts (View)
       const { data: countData, error: countErr } = await supabase
         .from("poll_option_counts")
         .select("option_id,votes")
@@ -127,7 +183,6 @@ export default function PollWidget() {
       for (const row of countData || []) countMap[row.option_id] = row.votes;
       setCounts(countMap);
 
-      // 4) Alle Votes, damit wir Namen anzeigen können
       const { data: allVotes, error: votesErr } = await supabase
         .from("poll_votes")
         .select("option_id,user_id")
@@ -137,34 +192,29 @@ export default function PollWidget() {
 
       const userIds = uniq((allVotes || []).map((v) => v.user_id).filter(Boolean));
 
-      // >>> WICHTIG: Namen über RPC holen (stabil, unabhängig von RLS)
       let profileMap = {};
       if (userIds.length > 0) {
-        const { data: nameRows, error: rpcErr } = await supabase.rpc("get_profile_names", {
-          ids: userIds,
-        });
-
-        if (rpcErr) throw rpcErr;
-
-        for (const r of nameRows || []) {
-          profileMap[r.id] = r.display_name || null;
-        }
+        const { map, stats } = await getNameMapForUserIds(userIds);
+        profileMap = map;
+        if (isAdmin) setDebugNameStats(stats);
+      } else {
+        if (isAdmin) setDebugNameStats({ ids: 0, found: 0, via: "none" });
       }
 
-      const map = {};
+      const mapByOption = {};
       for (const v of allVotes || []) {
-        const name = profileMap[v.user_id] || maskUserId(v.user_id);
-        if (!map[v.option_id]) map[v.option_id] = [];
-        map[v.option_id].push(name);
+        const k = String(v.user_id);
+        const name = profileMap[k] || maskUserId(k);
+        if (!mapByOption[v.option_id]) mapByOption[v.option_id] = [];
+        mapByOption[v.option_id].push(name);
       }
 
       const cleaned = {};
-      for (const [optionId, arr] of Object.entries(map)) {
+      for (const [optionId, arr] of Object.entries(mapByOption)) {
         cleaned[optionId] = uniq(arr).sort((a, b) => a.localeCompare(b, "de"));
       }
       setNamesByOption(cleaned);
 
-      // 5) Meine Votes
       if (user?.id) {
         const { data: myVoteRows, error: myVoteErr } = await supabase
           .from("poll_votes")
@@ -372,7 +422,6 @@ export default function PollWidget() {
         if (upErr) throw upErr;
       }
 
-      // Optionen neu schreiben
       const { error: delOptErr } = await supabase.from("poll_options").delete().eq("poll_id", pollId);
       if (delOptErr) throw delOptErr;
 
@@ -470,7 +519,12 @@ export default function PollWidget() {
 
         {isAdmin ? (
           <div className="ui-toolbar-right">
-            <button className="btn btn-secondary btn-sm" onClick={() => openAdminWithPoll(poll)} disabled={loading} type="button">
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => openAdminWithPoll(poll)}
+              disabled={loading}
+              type="button"
+            >
               {poll ? "Bearbeiten" : "Neue Abstimmung"}
             </button>
 
@@ -482,6 +536,12 @@ export default function PollWidget() {
           </div>
         ) : null}
       </div>
+
+      {isAdmin && debugNameStats ? (
+        <div className="ui-empty" style={{ marginBottom: 10 }}>
+          Debug: Namen gefunden {debugNameStats.found}/{debugNameStats.ids} (via {debugNameStats.via})
+        </div>
+      ) : null}
 
       {error ? (
         <div className="ui-empty" style={{ marginBottom: 12, borderStyle: "solid" }}>
@@ -608,7 +668,12 @@ export default function PollWidget() {
 
               <div className="field" style={{ minWidth: 220 }}>
                 <div className="label">Ende (optional)</div>
-                <input className="input" type="datetime-local" value={draftClosesAt} onChange={(e) => setDraftClosesAt(e.target.value)} />
+                <input
+                  className="input"
+                  type="datetime-local"
+                  value={draftClosesAt}
+                  onChange={(e) => setDraftClosesAt(e.target.value)}
+                />
               </div>
             </div>
 
@@ -644,7 +709,11 @@ export default function PollWidget() {
                   </div>
                 ))}
 
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setDraftOptions([...draftOptions, { key: uid(), label: "" }])}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setDraftOptions([...draftOptions, { key: uid(), label: "" }])}
+                >
                   + Option hinzufügen
                 </button>
               </div>
@@ -659,7 +728,9 @@ export default function PollWidget() {
               </button>
             </div>
 
-            <div className="help">Hinweis: Beim Speichern werden Optionen neu angelegt (alte Stimmen werden dabei entfernt).</div>
+            <div className="help">
+              Hinweis: Beim Speichern werden Optionen neu angelegt (alte Stimmen können dabei verloren gehen).
+            </div>
           </div>
         </div>
       ) : null}
