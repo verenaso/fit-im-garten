@@ -35,6 +35,10 @@ function uniq(arr) {
   return [...new Set(arr)];
 }
 
+function cleanName(s) {
+  return (s || "").trim().replace(/\s+/g, " ");
+}
+
 export default function PollWidget() {
   const { user, role, loading: authLoading } = useAuth();
   const isAdmin = role === "admin";
@@ -46,9 +50,13 @@ export default function PollWidget() {
   const [myVotes, setMyVotes] = useState(new Set());
   const [error, setError] = useState("");
 
-  // NEW: user-provided name for voting
+  // Name, den der User beim Abstimmen eingibt
   const [voterName, setVoterName] = useState("");
   const [nameLoaded, setNameLoaded] = useState(false);
+
+  // NEW: Anzeige "wer hat abgestimmt" per Option (aus poll_votes.voter_name)
+  const [namesByOption, setNamesByOption] = useState({}); // option_id -> string[]
+  const [namesNote, setNamesNote] = useState(""); // Hinweis, falls voter_name nicht lesbar
 
   // Admin editor
   const [adminOpen, setAdminOpen] = useState(false);
@@ -77,6 +85,7 @@ export default function PollWidget() {
 
   async function loadActivePoll() {
     setError("");
+    setNamesNote("");
     setLoading(true);
 
     try {
@@ -95,6 +104,7 @@ export default function PollWidget() {
         setOptions([]);
         setCounts({});
         setMyVotes(new Set());
+        setNamesByOption({});
         setLoading(false);
         return;
       }
@@ -122,7 +132,35 @@ export default function PollWidget() {
       for (const row of countData || []) countMap[row.option_id] = row.votes;
       setCounts(countMap);
 
-      // Meine Votes + (optional) gespeicherter Name
+      // NEW: Alle Stimmen inkl. voter_name laden, um "wer" anzuzeigen
+      const { data: allVotes, error: allVotesErr } = await supabase
+        .from("poll_votes")
+        .select("option_id,voter_name")
+        .eq("poll_id", pollData.id);
+
+      if (allVotesErr) {
+        // Falls RLS das blockt, zeigen wir einen Hinweis statt hard fail
+        setNamesByOption({});
+        setNamesNote(
+          "Hinweis: Namen der Abstimmenden konnten nicht geladen werden (evtl. Rechte/RLS)."
+        );
+      } else {
+        const map = {};
+        for (const v of allVotes || []) {
+          const n = cleanName(v.voter_name);
+          if (!n) continue;
+          if (!map[v.option_id]) map[v.option_id] = [];
+          map[v.option_id].push(n);
+        }
+
+        const cleaned = {};
+        for (const [optionId, arr] of Object.entries(map)) {
+          cleaned[optionId] = uniq(arr).sort((a, b) => a.localeCompare(b, "de"));
+        }
+        setNamesByOption(cleaned);
+      }
+
+      // Meine Votes + gespeicherter Name (falls vorhanden)
       if (user?.id) {
         const { data: myVoteRows, error: myVoteErr } = await supabase
           .from("poll_votes")
@@ -134,9 +172,12 @@ export default function PollWidget() {
 
         setMyVotes(new Set((myVoteRows || []).map((r) => r.option_id)));
 
-        // Name nur einmal initial aus DB ziehen (damit Tippen nicht überschrieben wird)
         if (!nameLoaded) {
-          const names = uniq((myVoteRows || []).map((r) => (r.voter_name || "").trim()).filter(Boolean));
+          const names = uniq(
+            (myVoteRows || [])
+              .map((r) => cleanName(r.voter_name))
+              .filter(Boolean)
+          );
           if (names.length > 0) setVoterName(names[0]);
           setNameLoaded(true);
         }
@@ -186,7 +227,7 @@ export default function PollWidget() {
     if (!poll || !user?.id) return;
     if (closed) return;
 
-    const name = (voterName || "").trim();
+    const name = cleanName(voterName);
     if (name.length < 2) {
       setError("Bitte gib deinen Namen an (mind. 2 Zeichen), bevor du abstimmst.");
       return;
@@ -231,16 +272,14 @@ export default function PollWidget() {
         if (insErr) throw insErr;
       }
 
-      // Wenn keine neue Option hinzugefügt wurde, aber Name ggf. geändert wurde:
-      if (toInsert.length === 0) {
-        const { error: upErr } = await supabase
-          .from("poll_votes")
-          .update({ voter_name: name })
-          .eq("poll_id", poll.id)
-          .eq("user_id", user.id);
+      // Name updaten für vorhandene Votes (wenn User nur Name geändert hat)
+      const { error: upErr } = await supabase
+        .from("poll_votes")
+        .update({ voter_name: name })
+        .eq("poll_id", poll.id)
+        .eq("user_id", user.id);
 
-        if (upErr) throw upErr;
-      }
+      if (upErr) throw upErr;
 
       await loadActivePoll();
     } catch (e) {
@@ -407,6 +446,33 @@ export default function PollWidget() {
     return `${used}/${max} gewählt`;
   }
 
+  function renderNames(optionId) {
+    const list = namesByOption[optionId] || [];
+    if (list.length === 0) return null;
+
+    const maxShow = 12;
+    const shown = list.slice(0, maxShow);
+    const rest = list.length - shown.length;
+
+    return (
+      <div className="ui-muted" style={{ fontSize: 12, color: "var(--c-darker)", marginTop: 6 }}>
+        <div style={{ fontWeight: 700, opacity: 0.9 }}>Abgestimmt:</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+          {shown.map((x) => (
+            <span key={x} className="ui-badge" style={{ fontSize: 11 }}>
+              {x}
+            </span>
+          ))}
+          {rest > 0 ? (
+            <span className="ui-badge" style={{ fontSize: 11 }}>
+              +{rest}
+            </span>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
   if (authLoading) return null;
 
   return (
@@ -451,6 +517,12 @@ export default function PollWidget() {
         </div>
       ) : null}
 
+      {namesNote ? (
+        <div className="ui-empty" style={{ marginBottom: 12, borderStyle: "solid" }}>
+          {namesNote}
+        </div>
+      ) : null}
+
       {loading ? (
         <div className="ui-empty">Lade Abstimmung…</div>
       ) : !poll ? (
@@ -475,7 +547,6 @@ export default function PollWidget() {
             ) : null}
           </div>
 
-          {/* NEW: Name input (MVP) */}
           {user?.id ? (
             <div className="field" style={{ marginBottom: 12 }}>
               <div className="label">Dein Name (für diese Abstimmung)</div>
@@ -486,7 +557,7 @@ export default function PollWidget() {
                 placeholder="z.B. Verena"
                 disabled={closed}
               />
-              <div className="help">Dieser Name wird zusammen mit deiner Stimme gespeichert.</div>
+              <div className="help">Dieser Name wird zusammen mit deiner Stimme gespeichert und angezeigt.</div>
             </div>
           ) : null}
 
@@ -509,14 +580,17 @@ export default function PollWidget() {
                     textAlign: "left",
                   }}
                 >
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
                     <div style={{ fontWeight: 800, color: "var(--c-darker)" }}>{o.label}</div>
                     <div className="ui-muted" style={{ fontSize: 12, color: "var(--c-darker)" }}>
                       {voteCount} Stimme{voteCount === 1 ? "" : "n"}
                     </div>
+
+                    {/* NEW: Namen anzeigen */}
+                    {renderNames(o.id)}
                   </div>
 
-                  <span className="ui-badge" style={{ minWidth: 52, justifyContent: "center" }}>
+                  <span className="ui-badge" style={{ minWidth: 52, justifyContent: "center", alignSelf: "flex-start" }}>
                     {checked ? "✓" : " "}
                   </span>
                 </button>
