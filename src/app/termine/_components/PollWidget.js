@@ -31,13 +31,6 @@ function toISOFromDatetimeLocal(value) {
   return d.toISOString();
 }
 
-function maskUserId(id) {
-  if (!id) return "Unbekannt";
-  const a = id.slice(0, 6);
-  const b = id.slice(-4);
-  return `${a}…${b}`;
-}
-
 function uniq(arr) {
   return [...new Set(arr)];
 }
@@ -49,15 +42,15 @@ export default function PollWidget() {
   const [loading, setLoading] = useState(true);
   const [poll, setPoll] = useState(null);
   const [options, setOptions] = useState([]);
-  const [counts, setCounts] = useState({}); // option_id -> votes
-  const [myVotes, setMyVotes] = useState(new Set()); // option_id
+  const [counts, setCounts] = useState({});
+  const [myVotes, setMyVotes] = useState(new Set());
   const [error, setError] = useState("");
 
-  // Wer hat abgestimmt (Emails pro Option)
-  const [votersByOption, setVotersByOption] = useState({}); // option_id -> string[]
-  const [profilesNote, setProfilesNote] = useState("");
+  // NEW: user-provided name for voting
+  const [voterName, setVoterName] = useState("");
+  const [nameLoaded, setNameLoaded] = useState(false);
 
-  // Admin editor state
+  // Admin editor
   const [adminOpen, setAdminOpen] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftDesc, setDraftDesc] = useState("");
@@ -70,47 +63,23 @@ export default function PollWidget() {
     { key: uid(), label: "" },
   ]);
 
-  async function fetchProfilesForUserIds(userIds) {
-    // Wir versuchen zuerst "Email" (mit großem E), dann fallback auf "email".
-    // Supabase JS erwartet bei quoted Columns keine Anführungszeichen in select-string,
-    // aber bei wirklich quoted Names ist es am sichersten, beides zu probieren.
-    // Variante A:
-    let data = null;
-    let err = null;
-
-    const resA = await supabase
-      .from("profiles")
-      .select("id,Email")
-      .in("id", userIds);
-
-    if (!resA.error) {
-      data = resA.data || [];
-      return { data, column: "Email" };
+  function isPollClosed(p) {
+    if (!p) return true;
+    if (!p.is_open) return true;
+    if (p.closes_at) {
+      const close = new Date(p.closes_at).getTime();
+      if (!Number.isNaN(close) && Date.now() > close) return true;
     }
-
-    // Variante B:
-    const resB = await supabase
-      .from("profiles")
-      .select("id,email")
-      .in("id", userIds);
-
-    if (!resB.error) {
-      data = resB.data || [];
-      return { data, column: "email" };
-    }
-
-    // Beide fehlgeschlagen
-    err = resA.error || resB.error;
-    throw err;
+    return false;
   }
+
+  const closed = isPollClosed(poll);
 
   async function loadActivePoll() {
     setError("");
-    setProfilesNote("");
     setLoading(true);
 
     try {
-      // aktive Poll
       const { data: pollData, error: pollErr } = await supabase
         .from("polls")
         .select("*")
@@ -126,14 +95,12 @@ export default function PollWidget() {
         setOptions([]);
         setCounts({});
         setMyVotes(new Set());
-        setVotersByOption({});
         setLoading(false);
         return;
       }
 
       setPoll(pollData);
 
-      // Optionen
       const { data: optData, error: optErr } = await supabase
         .from("poll_options")
         .select("*")
@@ -144,7 +111,6 @@ export default function PollWidget() {
       if (optErr) throw optErr;
       setOptions(optData || []);
 
-      // Counts
       const { data: countData, error: countErr } = await supabase
         .from("poll_option_counts")
         .select("option_id,votes")
@@ -156,68 +122,24 @@ export default function PollWidget() {
       for (const row of countData || []) countMap[row.option_id] = row.votes;
       setCounts(countMap);
 
-      // Alle Votes (für Anzeige "wer")
-      const { data: allVotes, error: votesErr } = await supabase
-        .from("poll_votes")
-        .select("option_id,user_id")
-        .eq("poll_id", pollData.id);
-
-      if (votesErr) throw votesErr;
-
-      const userIds = uniq((allVotes || []).map((v) => v.user_id).filter(Boolean));
-
-      let profileMap = {};
-      if (userIds.length > 0) {
-        try {
-          const { data: profData, column } = await fetchProfilesForUserIds(userIds);
-
-          for (const p of profData || []) {
-            const email = column === "Email" ? p.Email : p.email;
-            if (email) profileMap[p.id] = email;
-          }
-
-          const anyEmail = (profData || []).some((p) => {
-            const email = column === "Email" ? p.Email : p.email;
-            return !!email;
-          });
-
-          if (!anyEmail) {
-            setProfilesNote(
-              "Hinweis: In profiles sind zwar User vorhanden, aber keine E-Mails gefüllt."
-            );
-          }
-        } catch (e) {
-          setProfilesNote(
-            "Hinweis: Konnte die E-Mail-Adressen aus profiles nicht laden (evtl. RLS/Permissions)."
-          );
-        }
-      }
-
-      // votersByOption bauen
-      const vMap = {};
-      for (const v of allVotes || []) {
-        const label = profileMap[v.user_id] || maskUserId(v.user_id);
-        if (!vMap[v.option_id]) vMap[v.option_id] = [];
-        vMap[v.option_id].push(label);
-      }
-
-      const cleaned = {};
-      for (const [optionId, arr] of Object.entries(vMap)) {
-        cleaned[optionId] = uniq(arr).sort((a, b) => a.localeCompare(b, "de"));
-      }
-      setVotersByOption(cleaned);
-
-      // eigene Votes
+      // Meine Votes + (optional) gespeicherter Name
       if (user?.id) {
-        const { data: myVoteData, error: myVoteErr } = await supabase
+        const { data: myVoteRows, error: myVoteErr } = await supabase
           .from("poll_votes")
-          .select("option_id")
+          .select("option_id,voter_name")
           .eq("poll_id", pollData.id)
           .eq("user_id", user.id);
 
         if (myVoteErr) throw myVoteErr;
 
-        setMyVotes(new Set((myVoteData || []).map((r) => r.option_id)));
+        setMyVotes(new Set((myVoteRows || []).map((r) => r.option_id)));
+
+        // Name nur einmal initial aus DB ziehen (damit Tippen nicht überschrieben wird)
+        if (!nameLoaded) {
+          const names = uniq((myVoteRows || []).map((r) => (r.voter_name || "").trim()).filter(Boolean));
+          if (names.length > 0) setVoterName(names[0]);
+          setNameLoaded(true);
+        }
       } else {
         setMyVotes(new Set());
       }
@@ -233,18 +155,6 @@ export default function PollWidget() {
     loadActivePoll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id]);
-
-  function isPollClosed(p) {
-    if (!p) return true;
-    if (!p.is_open) return true;
-    if (p.closes_at) {
-      const close = new Date(p.closes_at).getTime();
-      if (!Number.isNaN(close) && Date.now() > close) return true;
-    }
-    return false;
-  }
-
-  const closed = isPollClosed(poll);
 
   function toggleOption(optionId) {
     if (!poll || closed) return;
@@ -275,6 +185,12 @@ export default function PollWidget() {
   async function saveVotes() {
     if (!poll || !user?.id) return;
     if (closed) return;
+
+    const name = (voterName || "").trim();
+    if (name.length < 2) {
+      setError("Bitte gib deinen Namen an (mind. 2 Zeichen), bevor du abstimmst.");
+      return;
+    }
 
     setError("");
     setLoading(true);
@@ -308,10 +224,22 @@ export default function PollWidget() {
           poll_id: poll.id,
           option_id,
           user_id: user.id,
+          voter_name: name,
         }));
 
         const { error: insErr } = await supabase.from("poll_votes").insert(rows);
         if (insErr) throw insErr;
+      }
+
+      // Wenn keine neue Option hinzugefügt wurde, aber Name ggf. geändert wurde:
+      if (toInsert.length === 0) {
+        const { error: upErr } = await supabase
+          .from("poll_votes")
+          .update({ voter_name: name })
+          .eq("poll_id", poll.id)
+          .eq("user_id", user.id);
+
+        if (upErr) throw upErr;
       }
 
       await loadActivePoll();
@@ -429,11 +357,7 @@ export default function PollWidget() {
         if (upErr) throw upErr;
       }
 
-      const { error: delOptErr } = await supabase
-        .from("poll_options")
-        .delete()
-        .eq("poll_id", pollId);
-
+      const { error: delOptErr } = await supabase.from("poll_options").delete().eq("poll_id", pollId);
       if (delOptErr) throw delOptErr;
 
       const rows = cleanOptions.map((o, idx) => ({
@@ -456,7 +380,8 @@ export default function PollWidget() {
 
   async function deletePoll() {
     if (!poll?.id) return;
-    if (!confirm("Abstimmung wirklich löschen? (Optionen & Stimmen werden mit gelöscht)")) return;
+    const ok = confirm("Abstimmung wirklich löschen? (Optionen & Stimmen werden mit gelöscht)");
+    if (!ok) return;
 
     setError("");
     setLoading(true);
@@ -480,33 +405,6 @@ export default function PollWidget() {
     const used = myVotes.size;
     const max = Math.max(1, Number(poll.max_votes || 1));
     return `${used}/${max} gewählt`;
-  }
-
-  function renderVoters(optionId) {
-    const list = votersByOption[optionId] || [];
-    if (list.length === 0) return null;
-
-    const maxShow = 8;
-    const shown = list.slice(0, maxShow);
-    const rest = list.length - shown.length;
-
-    return (
-      <div className="ui-muted" style={{ fontSize: 12, color: "var(--c-darker)", marginTop: 6 }}>
-        <div style={{ fontWeight: 700, opacity: 0.9 }}>Abgestimmt:</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-          {shown.map((x) => (
-            <span key={x} className="ui-badge" style={{ fontSize: 11 }}>
-              {x}
-            </span>
-          ))}
-          {rest > 0 ? (
-            <span className="ui-badge" style={{ fontSize: 11 }}>
-              +{rest}
-            </span>
-          ) : null}
-        </div>
-      </div>
-    );
   }
 
   if (authLoading) return null;
@@ -539,12 +437,7 @@ export default function PollWidget() {
             </button>
 
             {poll ? (
-              <button
-                className="btn btn-danger btn-sm"
-                onClick={deletePoll}
-                disabled={loading}
-                type="button"
-              >
+              <button className="btn btn-danger btn-sm" onClick={deletePoll} disabled={loading} type="button">
                 Löschen
               </button>
             ) : null}
@@ -558,12 +451,6 @@ export default function PollWidget() {
         </div>
       ) : null}
 
-      {profilesNote ? (
-        <div className="ui-empty" style={{ marginBottom: 12, borderStyle: "solid" }}>
-          {profilesNote}
-        </div>
-      ) : null}
-
       {loading ? (
         <div className="ui-empty">Lade Abstimmung…</div>
       ) : !poll ? (
@@ -573,9 +460,7 @@ export default function PollWidget() {
       ) : (
         <>
           <div style={{ marginBottom: 10 }}>
-            <div style={{ fontWeight: 800, fontSize: 16, color: "var(--c-darker)" }}>
-              {poll.title}
-            </div>
+            <div style={{ fontWeight: 800, fontSize: 16, color: "var(--c-darker)" }}>{poll.title}</div>
 
             {poll.description ? (
               <div className="ui-muted" style={{ fontSize: 13, color: "var(--c-darker)" }}>
@@ -589,6 +474,21 @@ export default function PollWidget() {
               </div>
             ) : null}
           </div>
+
+          {/* NEW: Name input (MVP) */}
+          {user?.id ? (
+            <div className="field" style={{ marginBottom: 12 }}>
+              <div className="label">Dein Name (für diese Abstimmung)</div>
+              <input
+                className="input"
+                value={voterName}
+                onChange={(e) => setVoterName(e.target.value)}
+                placeholder="z.B. Verena"
+                disabled={closed}
+              />
+              <div className="help">Dieser Name wird zusammen mit deiner Stimme gespeichert.</div>
+            </div>
+          ) : null}
 
           <div className="ui-list" style={{ marginBottom: 12 }}>
             {options.map((o) => {
@@ -609,19 +509,14 @@ export default function PollWidget() {
                     textAlign: "left",
                   }}
                 >
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <div style={{ fontWeight: 800, color: "var(--c-darker)" }}>{o.label}</div>
                     <div className="ui-muted" style={{ fontSize: 12, color: "var(--c-darker)" }}>
                       {voteCount} Stimme{voteCount === 1 ? "" : "n"}
                     </div>
-
-                    {renderVoters(o.id)}
                   </div>
 
-                  <span
-                    className="ui-badge"
-                    style={{ minWidth: 52, justifyContent: "center", alignSelf: "flex-start" }}
-                  >
+                  <span className="ui-badge" style={{ minWidth: 52, justifyContent: "center" }}>
                     {checked ? "✓" : " "}
                   </span>
                 </button>
@@ -660,7 +555,7 @@ export default function PollWidget() {
                 className="input"
                 value={draftTitle}
                 onChange={(e) => setDraftTitle(e.target.value)}
-                placeholder="z.B. Nächster Termin – welche Uhrzeit?"
+                placeholder="z.B. Nächster Termin"
               />
             </div>
 
@@ -681,7 +576,11 @@ export default function PollWidget() {
               </label>
 
               <label className="ui-row" style={{ gap: 8 }}>
-                <input type="checkbox" checked={draftAllowMulti} onChange={(e) => setDraftAllowMulti(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={draftAllowMulti}
+                  onChange={(e) => setDraftAllowMulti(e.target.checked)}
+                />
                 <span style={{ color: "var(--c-darker)", fontWeight: 700 }}>Mehrfachauswahl</span>
               </label>
 
@@ -724,7 +623,7 @@ export default function PollWidget() {
                         next[idx] = { ...next[idx], label: e.target.value };
                         setDraftOptions(next);
                       }}
-                      placeholder={`Option ${idx + 1} (z.B. Di 18:00)`}
+                      placeholder={`Option ${idx + 1}`}
                     />
                     <button
                       type="button"
@@ -740,7 +639,11 @@ export default function PollWidget() {
                   </div>
                 ))}
 
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setDraftOptions([...draftOptions, { key: uid(), label: "" }])}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setDraftOptions([...draftOptions, { key: uid(), label: "" }])}
+                >
                   + Option hinzufügen
                 </button>
               </div>
