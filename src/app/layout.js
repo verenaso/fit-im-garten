@@ -19,10 +19,10 @@ function NavLink({ href, children }) {
 function BottomNavItem({ href, label, icon }) {
   return (
     <a href={href} className="bottomnavitem">
-      <span className="bottomnavicon" aria-hidden="true">
+      <span className="text-lg leading-none" aria-hidden="true">
         {icon}
       </span>
-      <span>{label}</span>
+      <span className="font-medium">{label}</span>
     </a>
   );
 }
@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="de">
       <head>
-        <meta name="theme-color" content="#4B3F66" />
+        <meta name="theme-color" content="#5C4C7C" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
 
@@ -39,20 +39,16 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           {/* HEADER */}
           <header
-            className="sticky top-0 z-20"
+            className="sticky top-0 z-20 backdrop-blur"
             style={{
-              background: "rgba(63, 53, 88, 0.78)",
-              borderBottom: "1px solid rgba(255,255,255,0.10)",
-              backdropFilter: "blur(10px)",
+              backgroundColor: "rgba(51, 42, 68, 0.88)",
+              borderBottom: "1px solid rgba(255,255,255,0.14)",
+              color: "var(--text-on-bg)",
             }}
           >
             <div className="app-container" style={{ paddingTop: 12, paddingBottom: 12 }}>
               <div className="flex items-center justify-between gap-3">
-                <a
-                  href="/"
-                  className="flex items-center gap-3"
-                  style={{ textDecoration: "none", color: "white" }}
-                >
+                <a href="/" className="flex items-center gap-3" style={{ textDecoration: "none" }}>
                   <div className="relative h-10 w-24 sm:h-12 sm:w-28">
                     <Image
                       src="/fitimgarten-logo.jpg"
@@ -63,7 +59,7 @@ export default function RootLayout({ children }) {
                     />
                   </div>
 
-                  <div className="hidden sm:block" style={{ lineHeight: 1.05 }}>
+                  <div className="hidden sm:block" style={{ lineHeight: 1.05, color: "white" }}>
                     <div style={{ fontWeight: 900, letterSpacing: "0.2px" }}>Fit im Garten</div>
                     <div style={{ fontSize: 12, opacity: 0.82 }}>Workouts · Termine · Community</div>
                   </div>
@@ -72,7 +68,7 @@ export default function RootLayout({ children }) {
                 <HeaderAuth />
               </div>
 
-              {/* Desktop Navigation */}
+              {/* Desktop Nav */}
               <div className="mt-3 hidden sm:block">
                 <nav className="flex flex-wrap gap-2">
                   <NavLink href="/termine">Termine</NavLink>
@@ -92,9 +88,16 @@ export default function RootLayout({ children }) {
             </div>
           </div>
 
-          {/* BOTTOM NAV (Mobile) */}
-          <nav className="fixed bottom-0 left-0 right-0 z-30 sm:hidden bottomnav">
-            <div className="app-container bottomnav-inner">
+          {/* BOTTOM NAV */}
+          <nav
+            className="fixed bottom-0 left-0 right-0 z-30 backdrop-blur sm:hidden"
+            style={{
+              backgroundColor: "rgba(51, 42, 68, 0.92)",
+              borderTop: "1px solid rgba(255,255,255,0.14)",
+              color: "var(--text-on-bg)",
+            }}
+          >
+            <div className="app-container" style={{ paddingTop: 10, paddingBottom: 10 }}>
               <div className="grid grid-cols-5 gap-2">
                 <BottomNavItem href="/termine" label="Termine" icon="📅" />
                 <BottomNavItem href="/uebungen" label="Übungen" icon="🏋️" />

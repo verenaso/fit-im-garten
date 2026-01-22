@@ -1,62 +1,47 @@
 @import "tailwindcss";
 
-/* -----------------------------
-   Base + Theme Tokens
------------------------------- */
-
 html,
 body {
   height: 100%;
 }
 
+/* -----------------------------
+   Theme (clean + calm)
+------------------------------ */
 :root {
-  /* Darker purple palette (modern) */
-  --c-base: #4b3f66;   /* background base */
-  --c-deep: #3f3558;   /* background deep */
-  --c-surface: #544872; /* panels/cards */
-  --c-raised: #5f5382; /* primary actions / accents */
+  /* Brand */
+  --c-base: #5c4c7c;     /* dein Logo-Lila */
+  --c-dark: #45395d;
+  --c-darker: #332a44;
 
-  --c-text: #f4f1fa;   /* primary text on dark */
-  --c-muted: #cfc8e6;  /* muted text on dark */
-  --c-darker: #332a44; /* for rare light surfaces (if any) */
+  /* Background & surfaces */
+  --bg: #5c4c7c;
+  --surface: #ffffff; /* clean white surface */
+  --surface-2: #fbfafc; /* subtle off-white */
 
-  --stroke: rgba(255, 255, 255, 0.10);
+  /* Text */
+  --text-on-bg: #f5f3ff;
+  --text: #1f1b2b;      /* modern, fast-black */
+  --text-muted: rgba(31, 27, 43, 0.66);
+
+  /* Strokes & shadows */
+  --stroke: rgba(31, 27, 43, 0.10);
+  --shadow: 0 10px 28px rgba(31, 27, 43, 0.12);
 
   /* Radius */
-  --r-lg: 16px;
   --r-xl: 20px;
   --r-2xl: 26px;
 
-  /* Bottom nav */
-  --bottom-nav-h: 72px;
+  /* Layout */
+  --bottom-nav-h: 76px;
 
-  /* Neumorphism shadows */
-  --shadow-raised:
-    -10px -10px 18px rgba(255, 255, 255, 0.10),
-    10px 10px 22px rgba(0, 0, 0, 0.32);
-
-  --shadow-raised-soft:
-    -8px -8px 16px rgba(255, 255, 255, 0.08),
-    8px 8px 18px rgba(0, 0, 0, 0.28);
-
-  --shadow-inset:
-    inset 7px 7px 14px rgba(0, 0, 0, 0.34),
-    inset -7px -7px 14px rgba(255, 255, 255, 0.08);
-
-  --shadow-inset-soft:
-    inset 6px 6px 12px rgba(0, 0, 0, 0.30),
-    inset -6px -6px 12px rgba(255, 255, 255, 0.07);
-
-  --ring: 0 0 0 4px rgba(207, 200, 230, 0.18);
+  /* Focus */
+  --ring: 0 0 0 4px rgba(92, 76, 124, 0.18);
 }
 
 body {
-  /* Subtle ambient gradient */
-  background:
-    radial-gradient(900px 520px at 18% 0%, rgba(255, 255, 255, 0.12), transparent 60%),
-    radial-gradient(700px 420px at 92% 8%, rgba(255, 255, 255, 0.08), transparent 55%),
-    linear-gradient(180deg, var(--c-base) 0%, var(--c-deep) 100%);
-  color: var(--c-text);
+  background: var(--bg);
+  color: var(--text-on-bg);
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -73,7 +58,6 @@ a {
   background: rgba(255, 255, 255, 0.18);
 }
 
-/* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
@@ -83,9 +67,8 @@ a {
 }
 
 /* -----------------------------
-   App layout helpers
+   Layout helpers
 ------------------------------ */
-
 .app-container {
   margin: 0 auto;
   max-width: 80rem;
@@ -94,34 +77,34 @@ a {
 }
 
 .content-wrap {
-  padding-top: 16px;
-  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 14px);
+  padding-top: 18px;
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 12px);
 }
 
 @media (min-width: 640px) {
   .content-wrap {
-    padding-top: 22px;
+    padding-top: 26px;
     padding-bottom: 26px;
   }
 }
 
-/* Main "screen" surface (instead of white box) */
+/* Main content surface: clean + calm (not “fat card”) */
 .content-card {
-  background: rgba(84, 72, 114, 0.90); /* var(--c-surface) but slightly translucent */
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: var(--surface);
+  border: 1px solid var(--stroke);
   border-radius: var(--r-2xl);
-  box-shadow: var(--shadow-raised);
-  color: var(--c-text);
+  box-shadow: var(--shadow);
+  color: var(--text);
 }
 
-/* Typography inside the screen */
+/* Typography in content */
 .content-card h1 {
   font-size: 26px;
   line-height: 1.12;
   font-weight: 900;
-  letter-spacing: -0.25px;
+  letter-spacing: -0.3px;
   margin: 0;
-  color: var(--c-text);
+  color: var(--text);
 }
 
 .content-card h2 {
@@ -129,186 +112,130 @@ a {
   line-height: 1.2;
   font-weight: 850;
   margin: 0;
-  color: var(--c-text);
+  color: var(--text);
 }
 
 .content-card p,
 .content-card li,
 .content-card label {
-  color: var(--c-text);
+  color: var(--text);
 }
 
-.content-card .text-slate-600,
-.content-card .text-slate-700,
-.content-card .text-slate-800,
-.content-card .text-gray-500,
-.content-card .text-gray-600,
-.content-card .text-gray-700 {
-  color: var(--c-muted) !important;
-  opacity: 1 !important;
-}
-
-/* Outside content-card (on background), also keep muted readable */
+/* Tailwind grey text on purple background -> light */
 .text-slate-600,
 .text-slate-700,
 .text-slate-800,
 .text-gray-500,
 .text-gray-600,
 .text-gray-700 {
-  color: var(--c-muted) !important;
-  opacity: 0.92 !important;
+  color: rgba(245, 243, 255, 0.88) !important;
+  opacity: 1 !important;
+}
+
+/* Inside content card: tailwind grey -> modern muted */
+.content-card .text-slate-600,
+.content-card .text-slate-700,
+.content-card .text-slate-800,
+.content-card .text-gray-500,
+.content-card .text-gray-600,
+.content-card .text-gray-700 {
+  color: var(--text-muted) !important;
+  opacity: 1 !important;
 }
 
 /* -----------------------------
-   Header + Desktop Nav
+   Header / Nav links (clean pills)
 ------------------------------ */
-
 .navlink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+
   height: 40px;
   padding: 0 12px;
   border-radius: 14px;
 
   font-size: 0.9rem;
-  font-weight: 850;
+  font-weight: 800;
   letter-spacing: 0.15px;
 
   text-decoration: none;
-  color: var(--c-text);
+  color: var(--text-on-bg);
 
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 
   transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .navlink:hover {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .navlink:active {
   transform: translateY(1px);
 }
 
-/* Optional: if later aria-current="page" */
-.navlink[aria-current="page"] {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
 /* -----------------------------
-   Bottom Nav (closer to your old look)
+   Bottom Nav (closer to your old)
 ------------------------------ */
-
-.bottomnav {
-  background: rgba(63, 53, 88, 0.92); /* var(--c-deep) glass */
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
-  backdrop-filter: blur(10px);
-}
-
-.bottomnav-inner {
-  height: var(--bottom-nav-h);
-  padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px;
-}
-
 .bottomnavitem {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 0.25rem;
 
-  border-radius: 18px;
-  padding: 10px 8px;
+  border-radius: 1rem;
+  padding: 0.5rem 0.75rem;
 
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.15px;
-
-  color: rgba(244, 241, 250, 0.92);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-on-bg);
   text-decoration: none;
 
   background: transparent;
   border: 1px solid transparent;
 
-  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .bottomnavitem:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-.bottomnavitem:active {
-  transform: translateY(1px);
-}
-
-.bottomnavicon {
-  font-size: 18px;
-  line-height: 1;
-}
-
-/* Optional active state if we add it later */
-.bottomnavitem[data-active="true"] {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.10);
   border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: var(--shadow-inset-soft);
 }
 
 /* -----------------------------
-   UI Kit (no tailwind @apply)
+   UI Kit (clean, modern)
+   No @apply
 ------------------------------ */
-
-/* Helpers */
-.ui-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.ui-col {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.ui-row { display: flex; gap: 12px; align-items: center; }
+.ui-col { display: flex; flex-direction: column; gap: 12px; }
 
 .ui-section-title {
   font-size: 18px;
   font-weight: 900;
   letter-spacing: 0.15px;
-  color: var(--c-text);
+  color: var(--text);
   margin: 0 0 10px 0;
 }
 
-.ui-muted {
-  opacity: 0.86;
-}
+.ui-muted { color: var(--text-muted); }
 
-/* Cards / Panels inside the screen */
+/* Cards inside content */
 .ui-card {
-  background: rgba(75, 63, 102, 0.55); /* slightly darker than surface */
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-inset-soft);
+  background: var(--surface-2);
+  border: 1px solid rgba(31, 27, 43, 0.08);
+  border-radius: 18px;
 }
 
-.ui-card-pad {
-  padding: 14px;
-}
-.ui-card-pad-lg {
-  padding: 18px;
-}
+.ui-card-pad { padding: 14px; }
+.ui-card-pad-lg { padding: 18px; }
 
-/* Lists */
-.ui-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.ui-list { display: flex; flex-direction: column; gap: 10px; }
 
 .ui-list-item {
   display: flex;
@@ -317,20 +244,12 @@ a {
   gap: 12px;
 
   padding: 12px 12px;
-  border-radius: 18px;
+  border-radius: 16px;
 
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(75, 63, 102, 0.40);
-  box-shadow: var(--shadow-inset-soft);
-
-  transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease;
+  border: 1px solid rgba(31, 27, 43, 0.08);
+  background: #fff;
 }
 
-.ui-list-item:active {
-  transform: translateY(1px);
-}
-
-/* Badges */
 .ui-badge {
   display: inline-flex;
   align-items: center;
@@ -339,11 +258,11 @@ a {
   border-radius: 999px;
 
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 800;
 
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--c-text);
+  border: 1px solid rgba(31, 27, 43, 0.10);
+  background: rgba(92, 76, 124, 0.10);
+  color: var(--c-darker);
 }
 
 /* Buttons */
@@ -360,152 +279,89 @@ a {
   font-weight: 900;
   letter-spacing: 0.2px;
 
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(31, 27, 43, 0.12);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 
   transition: transform 0.06s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.btn:active {
-  transform: translateY(1px);
-  box-shadow: var(--shadow-inset-soft);
-}
-
-.btn:focus {
-  outline: none;
-  box-shadow: var(--ring);
-}
+.btn:active { transform: translateY(1px); }
+.btn:focus { outline: none; box-shadow: var(--ring); }
 
 .btn-primary {
-  background: rgba(95, 83, 130, 0.92); /* var(--c-raised) */
-  color: var(--c-text);
-  box-shadow: var(--shadow-raised-soft);
+  background: var(--c-base);
+  color: #fff;
+  border-color: rgba(92, 76, 124, 0.24);
 }
 
-.btn-primary:hover {
-  background: rgba(95, 83, 130, 1);
-}
+.btn-primary:hover { filter: brightness(1.02); }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--c-text);
-  box-shadow: var(--shadow-raised-soft);
+  background: rgba(92, 76, 124, 0.10);
+  color: var(--c-darker);
+  border-color: rgba(92, 76, 124, 0.18);
 }
 
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
+.btn-secondary:hover { background: rgba(92, 76, 124, 0.14); }
 
 .btn-ghost {
   background: transparent;
-  color: var(--c-text);
-  border-color: rgba(255, 255, 255, 0.10);
+  color: var(--c-darker);
+  border-color: rgba(31, 27, 43, 0.12);
 }
 
-.btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
+.btn-ghost:hover { background: rgba(92, 76, 124, 0.08); }
 
 .btn-danger {
-  background: rgba(220, 38, 38, 0.14);
-  color: #ffd7d7;
-  border-color: rgba(255, 255, 255, 0.10);
+  background: rgba(220, 38, 38, 0.10);
+  color: rgb(153, 27, 27);
+  border-color: rgba(220, 38, 38, 0.22);
 }
 
-.btn-full {
-  width: 100%;
-}
-
-.btn-sm {
-  height: 38px;
-  border-radius: 14px;
-  padding: 0 12px;
-  font-weight: 900;
-}
-
-.btn-icon {
-  width: 44px;
-  padding: 0;
-}
+.btn-full { width: 100%; }
+.btn-sm { height: 38px; border-radius: 14px; padding: 0 12px; font-weight: 900; }
+.btn-icon { width: 44px; padding: 0; }
 
 /* Inputs */
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.field { display: flex; flex-direction: column; gap: 6px; }
 
 .label {
   font-size: 13px;
   font-weight: 900;
-  color: var(--c-text);
+  color: var(--text);
   opacity: 0.92;
 }
 
-.input,
-.select,
-.textarea {
+.input, .select, .textarea {
   width: 100%;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-
-  background: rgba(75, 63, 102, 0.55);
-  color: var(--c-text);
-
+  border: 1px solid rgba(31, 27, 43, 0.14);
+  background: #fff;
+  color: var(--text);
   padding: 12px 12px;
-  font-size: 16px; /* iOS zoom fix */
-
+  font-size: 16px;
   outline: none;
-  box-shadow: var(--shadow-inset);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.textarea {
-  min-height: 110px;
-  resize: vertical;
-  padding-top: 12px;
-}
+.textarea { min-height: 110px; resize: vertical; padding-top: 12px; }
 
-.input:focus,
-.select:focus,
-.textarea:focus {
-  border-color: rgba(207, 200, 230, 0.26);
-  box-shadow: var(--shadow-inset), var(--ring);
+.input:focus, .select:focus, .textarea:focus {
+  border-color: rgba(92, 76, 124, 0.55);
+  box-shadow: var(--ring);
 }
 
 .help {
   font-size: 12px;
-  opacity: 0.85;
-  color: var(--c-muted);
-}
-
-/* Toolbar */
-.ui-toolbar {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-.ui-toolbar-left,
-.ui-toolbar-right {
-  display: flex;
-  gap: 10px;
-  align-items: center;
+  color: var(--text-muted);
 }
 
 /* Empty states */
 .ui-empty {
   padding: 14px;
   border-radius: 16px;
-  border: 1px dashed rgba(255, 255, 255, 0.16);
-  background: rgba(75, 63, 102, 0.38);
-  color: var(--c-muted);
-  opacity: 0.95;
-}
-
-/* Generic border override */
-.border {
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  border: 1px dashed rgba(31, 27, 43, 0.18);
+  background: rgba(92, 76, 124, 0.06);
+  color: var(--text-muted);
 }
