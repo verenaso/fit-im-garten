@@ -4,14 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 
-function normalizeUsername(s) {
+function normalizeDisplayName(s) {
   return (s || "").trim().replace(/\s+/g, " ");
 }
 
-function isValidUsername(u) {
-  const s = normalizeUsername(u);
-  // simple MVP-Regel: 3–24 Zeichen
-  return s.length >= 3 && s.length <= 24;
+function isValidDisplayName(s) {
+  const dn = normalizeDisplayName(s);
+  return dn.length >= 3 && dn.length <= 24;
 }
 
 export default function LoginPage() {
@@ -23,8 +22,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Username nur beim Signup
-  const [username, setUsername] = useState("");
+  // Display Name nur beim Signup
+  const [displayName, setDisplayName] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
@@ -32,43 +31,14 @@ export default function LoginPage() {
 
   const canSubmit = useMemo(() => {
     if (!email.trim() || !password) return false;
-    if (isSignup) return isValidUsername(username);
+    if (isSignup) return isValidDisplayName(displayName);
     return true;
-  }, [email, password, username, isSignup]);
+  }, [email, password, displayName, isSignup]);
 
   useEffect(() => {
     setMsg("");
     setErr("");
   }, [mode]);
-
-  async function ensureProfileUsername(userId, desiredUsername) {
-    // Fallback: wir versuchen zusätzlich, den Username in profiles zu schreiben.
-    // (Der Trigger macht es normalerweise sowieso.)
-    const u = normalizeUsername(desiredUsername);
-    if (!u) return;
-
-    const { error } = await supabase
-      .from("profiles")
-      .upsert({ id: userId, username: u }, { onConflict: "id" });
-
-    if (error) throw error;
-  }
-
-  function mapNiceError(e) {
-    const m = e?.message || "";
-
-    // Supabase/Postgres unique violation
-    // Kann in Messages unterschiedlich auftauchen, daher mehrere Checks
-    if (
-      m.toLowerCase().includes("duplicate key") ||
-      m.toLowerCase().includes("unique") ||
-      m.toLowerCase().includes("profiles_username_unique")
-    ) {
-      return "Dieser Nutzername ist leider schon vergeben. Bitte wähle einen anderen.";
-    }
-
-    return m || "Unbekannter Fehler.";
-  }
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -86,30 +56,25 @@ export default function LoginPage() {
       }
 
       if (isSignup) {
-        const u = normalizeUsername(username);
+        const dn = normalizeDisplayName(displayName);
 
-        if (!isValidUsername(u)) {
+        if (!isValidDisplayName(dn)) {
           setErr("Bitte einen Nutzernamen mit 3–24 Zeichen eingeben.");
           return;
         }
 
-        // 1) Signup inkl. user_metadata.username (Trigger nutzt genau das)
+        // WICHTIG: Wir speichern den Namen in auth.user_metadata (das darf das Frontend),
+        // der DB-Trigger schreibt ihn dann zuverlässig in public.profiles."Display name".
         const { data, error } = await supabase.auth.signUp({
           email: cleanEmail,
           password: cleanPw,
           options: {
-            data: { username: u },
+            data: { display_name: dn },
           },
         });
 
         if (error) throw error;
 
-        // 2) Optionaler Fallback: profiles upsert (falls Trigger zeitlich verzögert oder deaktiviert)
-        if (data?.user?.id) {
-          await ensureProfileUsername(data.user.id, u);
-        }
-
-        // Wenn Email confirmation aktiv ist, ist session evtl. null
         if (data?.session) {
           router.push("/termine");
         } else {
@@ -118,7 +83,6 @@ export default function LoginPage() {
           );
           setMode("login");
         }
-
         return;
       }
 
@@ -127,11 +91,12 @@ export default function LoginPage() {
         email: cleanEmail,
         password: cleanPw,
       });
+
       if (error) throw error;
 
       if (data?.session) router.push("/termine");
     } catch (e2) {
-      setErr(mapNiceError(e2));
+      setErr(e2?.message || "Unbekannter Fehler.");
     } finally {
       setLoading(false);
     }
@@ -184,14 +149,14 @@ export default function LoginPage() {
               <div className="label">Nutzername</div>
               <input
                 className="input"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="z.B. Verena"
                 autoComplete="nickname"
                 required
               />
               <div className="help">
-                Wird in Forum, Abstimmungen und bei Foto-Uploads angezeigt. (3–24 Zeichen)
+                Wird bei Abstimmungen, Forum und Fotos angezeigt. (3–24 Zeichen)
               </div>
             </div>
           ) : null}
