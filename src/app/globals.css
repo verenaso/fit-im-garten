@@ -6,22 +6,22 @@ body {
 }
 
 /* -----------------------------
-   Theme (clean + calm)
+   Theme (clean minimal, calm)
 ------------------------------ */
 :root {
   /* Brand */
-  --c-base: #5c4c7c;     /* dein Logo-Lila */
+  --c-base: #5c4c7c;     /* Logo-Lila */
   --c-dark: #45395d;
   --c-darker: #332a44;
 
   /* Background & surfaces */
-  --bg: #5c4c7c;
-  --surface: #ffffff; /* clean white surface */
-  --surface-2: #fbfafc; /* subtle off-white */
+  --bg: #5c4c7c;         /* EINHEITLICHER Hintergrund */
+  --surface: #ffffff;    /* Mittelbox */
+  --surface-2: #fbfafc;  /* leichte Abstufung für Panels */
 
   /* Text */
   --text-on-bg: #f5f3ff;
-  --text: #1f1b2b;      /* modern, fast-black */
+  --text: #1f1b2b;       /* modern, fast-black */
   --text-muted: rgba(31, 27, 43, 0.66);
 
   /* Strokes & shadows */
@@ -48,6 +48,9 @@ body {
 
   font-weight: 520;
   letter-spacing: 0.1px;
+
+  /* verhindert das horizontale “Wischen nach rechts” durch einzelne überbreite Elemente */
+  overflow-x: hidden;
 }
 
 a {
@@ -88,7 +91,7 @@ a {
   }
 }
 
-/* Main content surface: clean + calm (not “fat card”) */
+/* Mittelbox: clean + ruhig */
 .content-card {
   background: var(--surface);
   border: 1px solid var(--stroke);
@@ -97,7 +100,7 @@ a {
   color: var(--text);
 }
 
-/* Typography in content */
+/* Typo */
 .content-card h1 {
   font-size: 26px;
   line-height: 1.12;
@@ -144,7 +147,7 @@ a {
 }
 
 /* -----------------------------
-   Header / Nav links (clean pills)
+   Header / Nav links
 ------------------------------ */
 .navlink {
   display: inline-flex;
@@ -179,7 +182,7 @@ a {
 }
 
 /* -----------------------------
-   Bottom Nav (closer to your old)
+   Bottom Nav
 ------------------------------ */
 .bottomnavitem {
   display: flex;
@@ -209,8 +212,69 @@ a {
 }
 
 /* -----------------------------
-   UI Kit (clean, modern)
-   No @apply
+   HeaderAuth button sizing (Fix #2)
+------------------------------ */
+.header-auth {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.header-auth-name {
+  color: rgba(245, 243, 255, 0.92);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 38vw; /* verhindert overflow auf mobile */
+}
+
+.header-auth-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 36px;               /* kleiner auf mobile */
+  padding: 0 10px;
+  border-radius: 12px;
+
+  font-size: 13px;
+  font-weight: 800;
+
+  color: var(--c-darker);
+  background: rgba(245, 243, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.06s ease, filter 0.15s ease;
+  white-space: nowrap;
+}
+
+.header-auth-btn:hover {
+  filter: brightness(1.03);
+}
+
+.header-auth-btn:active {
+  transform: translateY(1px);
+}
+
+@media (min-width: 640px) {
+  .header-auth-btn {
+    height: 40px;
+    padding: 0 12px;
+    font-size: 14px;
+    border-radius: 14px;
+  }
+  .header-auth-name {
+    max-width: 320px;
+    font-size: 14px;
+  }
+}
+
+/* -----------------------------
+   UI Kit (clean)
 ------------------------------ */
 .ui-row { display: flex; gap: 12px; align-items: center; }
 .ui-col { display: flex; flex-direction: column; gap: 12px; }
@@ -225,7 +289,6 @@ a {
 
 .ui-muted { color: var(--text-muted); }
 
-/* Cards inside content */
 .ui-card {
   background: var(--surface-2);
   border: 1px solid rgba(31, 27, 43, 0.08);
@@ -265,7 +328,6 @@ a {
   color: var(--c-darker);
 }
 
-/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -295,23 +357,17 @@ a {
   border-color: rgba(92, 76, 124, 0.24);
 }
 
-.btn-primary:hover { filter: brightness(1.02); }
-
 .btn-secondary {
   background: rgba(92, 76, 124, 0.10);
   color: var(--c-darker);
   border-color: rgba(92, 76, 124, 0.18);
 }
 
-.btn-secondary:hover { background: rgba(92, 76, 124, 0.14); }
-
 .btn-ghost {
   background: transparent;
   color: var(--c-darker);
   border-color: rgba(31, 27, 43, 0.12);
 }
-
-.btn-ghost:hover { background: rgba(92, 76, 124, 0.08); }
 
 .btn-danger {
   background: rgba(220, 38, 38, 0.10);
@@ -323,7 +379,6 @@ a {
 .btn-sm { height: 38px; border-radius: 14px; padding: 0 12px; font-weight: 900; }
 .btn-icon { width: 44px; padding: 0; }
 
-/* Inputs */
 .field { display: flex; flex-direction: column; gap: 6px; }
 
 .label {
@@ -357,7 +412,6 @@ a {
   color: var(--text-muted);
 }
 
-/* Empty states */
 .ui-empty {
   padding: 14px;
   border-radius: 16px;
