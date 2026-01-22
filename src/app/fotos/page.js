@@ -1,112 +1,165 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useAuth } from "@/app/_components/AuthProvider";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "../../lib/supabaseClient";
+import { useAuth } from "../_components/AuthProvider";
 
-function todayYMD() {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+function fmtDate(iso) {
+  try {
+    return new Date(iso).toLocaleString("de-DE");
+  } catch {
+    return "";
+  }
 }
 
-function fmtDate(yyyyMmDd) {
-  const [y, m, d] = yyyyMmDd.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString("de-DE", {
-    weekday: "short",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+function fileExt(name) {
+  const parts = (name || "").split(".");
+  return parts.length > 1 ? parts.pop().toLowerCase() : "";
 }
 
 export default function FotosPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, displayName, loading: authLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [photos, setPhotos] = useState([]);
+  const [error, setError] = useState("");
 
-  const [takenOn, setTakenOn] = useState(todayYMD());
-  const [title, setTitle] = useState("");
+  const [caption, setCaption] = useState("");
   const [file, setFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+
+  const [photos, setPhotos] = useState([]);
+  const [profileMap, setProfileMap] = useState({}); // user_id -> display name
+
+  const canUpload = useMemo(() => !!user?.id, [user]);
 
   async function loadPhotos() {
+    setError("");
     setLoading(true);
-    const { data, error } = await supabase
-      .from("photos")
-      .select("id, taken_on, title, storage_path, created_at")
-      .order("taken_on", { ascending: false })
-      .order("created_at", { ascending: false });
 
-    if (!error) setPhotos(data || []);
-    setLoading(false);
+    try {
+      const { data, error: e } = await supabase
+        .from("photos")
+        .select("id,user_id,storage_path,caption,created_at")
+        .order("created_at", { ascending: false });
+
+      if (e) throw e;
+
+      const rows = data || [];
+      setPhotos(rows);
+
+      const userIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))];
+      if (userIds.length === 0) {
+        setProfileMap({});
+        return;
+      }
+
+      const { data: profs, error: pe } = await supabase
+        .from("profiles")
+        .select('id,"Display name"')
+        .in("id", userIds);
+
+      if (pe) throw pe;
+
+      const map = {};
+      for (const p of profs || []) map[p.id] = p?.["Display name"] || null;
+      setProfileMap(map);
+    } catch (e2) {
+      setError(e2?.message || "Fehler beim Laden der Fotos.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       setPhotos([]);
+      setProfileMap({});
       setLoading(false);
       return;
     }
     loadPhotos();
-  }, [authLoading, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
 
   async function onUpload(e) {
     e.preventDefault();
+    if (!user?.id) return;
+
+    setError("");
+
     if (!file) {
-      alert("Bitte eine Bilddatei auswählen.");
+      setError("Bitte wähle ein Foto aus.");
       return;
     }
 
-    setUploading(true);
+    setLoading(true);
 
     try {
-      const ext = file.name.split(".").pop() || "jpg";
-      const safeExt = ext.toLowerCase().replace(/[^a-z0-9]/g, "");
-      const fileName = `${crypto.randomUUID()}.${safeExt}`;
-      const path = `${takenOn}/${fileName}`;
+      const ext = fileExt(file.name) || "jpg";
+      const stamp = Date.now();
+      const path = `${user.id}/${stamp}.${ext}`;
 
       const { error: upErr } = await supabase.storage
-        .from("workout-fotos")
+        .from("photos")
         .upload(path, file, {
           cacheControl: "3600",
           upsert: false,
-          contentType: file.type || "image/jpeg",
         });
 
-      if (upErr) {
-        alert("Upload fehlgeschlagen.\n\n" + upErr.message);
-        return;
-      }
+      if (upErr) throw upErr;
 
-      const { error: dbErr } = await supabase.from("photos").insert({
-        taken_on: takenOn,
-        title: title.trim() || null,
+      const { error: insErr } = await supabase.from("photos").insert({
+        user_id: user.id,
         storage_path: path,
+        caption: caption.trim() || null,
       });
 
-      if (dbErr) {
-        alert("Foto hochgeladen, aber DB-Eintrag fehlgeschlagen.\n\n" + dbErr.message);
-        return;
-      }
+      if (insErr) throw insErr;
 
-      setTitle("");
+      setCaption("");
       setFile(null);
-      const input = document.getElementById("photoFileInput");
+
+      const input = document.getElementById("photo-file-input");
       if (input) input.value = "";
+
       await loadPhotos();
+    } catch (e2) {
+      setError(e2?.message || "Upload fehlgeschlagen.");
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   }
 
-  function getSignedUrl(storagePath) {
-    return supabase.storage.from("workout-fotos").createSignedUrl(storagePath, 60 * 60);
+  function publicUrl(path) {
+    const { data } = supabase.storage.from("photos").getPublicUrl(path);
+    return data?.publicUrl || "";
+  }
+
+  async function onDeletePhoto(row) {
+    const ok = confirm("Foto wirklich löschen?");
+    if (!ok) return;
+
+    setError("");
+    setLoading(true);
+
+    try {
+      // DB row löschen (Policy: nur eigene)
+      const { error: delRowErr } = await supabase.from("photos").delete().eq("id", row.id);
+      if (delRowErr) throw delRowErr;
+
+      // Storage file löschen (kann je nach Storage-Policy blockiert sein)
+      const { error: delFileErr } = await supabase.storage.from("photos").remove([row.storage_path]);
+      if (delFileErr) {
+        // DB ist wichtiger als Storage cleanup -> nicht hart failen
+        console.warn("Could not delete storage file:", delFileErr.message);
+      }
+
+      await loadPhotos();
+    } catch (e2) {
+      setError(e2?.message || "Löschen fehlgeschlagen.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -117,109 +170,120 @@ export default function FotosPage() {
         <p className="mt-6 text-gray-600">Prüfe Login…</p>
       ) : !user ? (
         <p className="mt-6 text-gray-700">
-          Du bist nicht eingeloggt. Bitte logge dich ein, um Fotos zu sehen und hochzuladen.
+          Du bist nicht eingeloggt. Bitte logge dich ein, um Fotos zu sehen.
         </p>
       ) : (
         <>
-          <form onSubmit={onUpload} className="mt-6 rounded-xl border p-4 space-y-3">
-            <div className="font-semibold">Foto hochladen</div>
+          <p className="mt-2 text-gray-600">
+            Eingeloggt als {displayName || "Nutzer"}{" "}
+          </p>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1">
-                <div className="text-sm text-gray-700">Datum</div>
-                <input
-                  className="w-full rounded-lg border p-2"
-                  type="date"
-                  value={takenOn}
-                  onChange={(e) => setTakenOn(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label className="space-y-1">
-                <div className="text-sm text-gray-700">Titel (optional)</div>
-                <input
-                  className="w-full rounded-lg border p-2"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="z.B. Nach dem Training"
-                />
-              </label>
+          <form onSubmit={onUpload} className="ui-card ui-card-pad-lg" style={{ marginTop: 16 }}>
+            <div className="ui-section-title" style={{ marginBottom: 10 }}>
+              Foto hochladen
             </div>
 
-            <label className="space-y-1 block">
-              <div className="text-sm text-gray-700">Bilddatei</div>
-              <input
-                id="photoFileInput"
-                className="w-full"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                required
-              />
-            </label>
+            {error ? (
+              <div className="ui-empty" style={{ borderStyle: "solid", marginBottom: 12 }}>
+                {error}
+              </div>
+            ) : null}
 
-            <button className="rounded-lg border px-4 py-2" type="submit" disabled={uploading}>
-              {uploading ? "Lade hoch…" : "Hochladen"}
-            </button>
+            <div className="ui-col">
+              <div className="field">
+                <div className="label">Datei</div>
+                <input
+                  id="photo-file-input"
+                  className="input"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  disabled={!canUpload || loading}
+                />
+              </div>
+
+              <div className="field">
+                <div className="label">Caption (optional)</div>
+                <input
+                  className="input"
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  placeholder="z.B. Fit im Garten – Intervalle 💪"
+                  disabled={!canUpload || loading}
+                />
+              </div>
+
+              <button className="btn btn-primary btn-full" type="submit" disabled={!canUpload || loading}>
+                {loading ? "Bitte warten…" : "Hochladen"}
+              </button>
+
+              <div className="help">
+                Hinweis: Für MVP ist der Storage-Bucket oft „public“. Wenn dein Bucket privat ist, brauchen wir Signed URLs.
+              </div>
+            </div>
           </form>
 
-          <div className="mt-6">
-            <div className="font-semibold">Galerie</div>
+          <div style={{ marginTop: 18 }}>
+            <div className="ui-section-title" style={{ marginBottom: 10 }}>
+              Galerie
+            </div>
 
             {loading ? (
-              <p className="mt-3 text-gray-600">Lade…</p>
+              <div className="ui-empty">Lade…</div>
             ) : photos.length === 0 ? (
-              <p className="mt-3 text-gray-600">Noch keine Fotos.</p>
+              <div className="ui-empty">Noch keine Fotos.</div>
             ) : (
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {photos.map((p) => (
-                  <PhotoCard key={p.id} photo={p} getSignedUrl={getSignedUrl} />
-                ))}
+              <div className="ui-list">
+                {photos.map((p) => {
+                  const url = publicUrl(p.storage_path);
+                  const uploader = profileMap[p.user_id] || "Unbekannt";
+
+                  return (
+                    <div key={p.id} className="ui-card ui-card-pad">
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {url ? (
+                          <img
+                            src={url}
+                            alt={p.caption || "Foto"}
+                            style={{
+                              width: "100%",
+                              borderRadius: 14,
+                              border: "1px solid rgba(51,42,68,0.12)",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <div className="ui-empty">Bild-URL konnte nicht geladen werden.</div>
+                        )}
+
+                        <div>
+                          <div style={{ fontWeight: 900, color: "var(--c-darker)" }}>
+                            {p.caption || "—"}
+                          </div>
+                          <div className="ui-muted" style={{ fontSize: 12, color: "var(--c-darker)" }}>
+                            von <b>{uploader}</b> · {fmtDate(p.created_at)}
+                          </div>
+                        </div>
+
+                        {user?.id === p.user_id ? (
+                          <button
+                            className="btn btn-danger btn-sm"
+                            type="button"
+                            onClick={() => onDeletePhoto(p)}
+                            disabled={loading}
+                          >
+                            Löschen
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         </>
       )}
     </main>
-  );
-}
-
-function PhotoCard({ photo, getSignedUrl }) {
-  const [url, setUrl] = useState(null);
-
-  useEffect(() => {
-    let alive = true;
-    getSignedUrl(photo.storage_path).then(({ data, error }) => {
-      if (!alive) return;
-      if (error) return;
-      setUrl(data?.signedUrl ?? null);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [photo.storage_path, getSignedUrl]);
-
-  return (
-    <div className="rounded-xl border p-3">
-      <div className="text-sm font-semibold">{fmtDate(photo.taken_on)}</div>
-      {photo.title ? <div className="text-sm text-gray-600">{photo.title}</div> : null}
-
-      {/* Kein Crop: natürliche Höhe */}
-      <div className="mt-2 w-full overflow-hidden rounded-lg border bg-gray-50">
-        {url ? (
-          <img
-            src={url}
-            alt={photo.title || "Workout Foto"}
-            className="w-full h-auto"
-            loading="lazy"
-          />
-        ) : (
-          <div className="h-40 w-full flex items-center justify-center text-sm text-gray-500">
-            Lade Bild…
-          </div>
-        )}
-      </div>
-    </div>
   );
 }

@@ -1,93 +1,102 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 
-const MAX_LOADING_MS = 2500;
-
-const AuthContext = createContext({
-  user: null,
-  role: null,
-  loading: true,
-  refresh: async () => {},
-});
-
-async function fetchRole(userId) {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
-
-  if (!error && data?.role) return data.role;
-  return "member";
-}
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
+  const [displayName, setDisplayName] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const timeoutRef = useRef(null);
+
+  async function fetchProfile(u) {
+    if (!u?.id) {
+      setRole(null);
+      setDisplayName(null);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select('role,"Display name"')
+      .eq("id", u.id)
+      .maybeSingle();
+
+    if (error) {
+      setRole(null);
+      setDisplayName(null);
+      return;
+    }
+
+    setRole(data?.role || null);
+    setDisplayName(data?.["Display name"] || null);
+  }
 
   async function refresh() {
     setLoading(true);
     try {
       const { data } = await supabase.auth.getSession();
-      const u = data?.session?.user ?? null;
-      setUser(u);
-      setRole(u ? await fetchRole(u.id) : null);
-    } catch (e) {
-      console.error("Auth refresh error:", e);
-      setUser(null);
-      setRole(null);
+      const sessionUser = data?.session?.user || null;
+      setUser(sessionUser);
+      await fetchProfile(sessionUser);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    let cancelled = false;
+    let mounted = true;
 
-    // Failsafe: niemals endlos "Prüfe Login…"
-    const timer = setTimeout(() => {
-      if (cancelled) return;
-      console.warn("Auth loading timeout – stop loading to avoid endless spinner");
-      setLoading(false);
-    }, MAX_LOADING_MS);
+    function startTimeoutFailsafe() {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        if (!mounted) return;
+        setLoading(false);
+      }, 8000);
+    }
 
-    refresh().finally(() => clearTimeout(timer));
+    startTimeoutFailsafe();
+
+    (async () => {
+      await refresh();
+    })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      try {
-        if (cancelled) return;
-        setLoading(true);
-
-        const u = session?.user ?? null;
-        setUser(u);
-        setRole(u ? await fetchRole(u.id) : null);
-      } catch (e) {
-        console.error("Auth onAuthStateChange error:", e);
-        setUser(null);
-        setRole(null);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      startTimeoutFailsafe();
+      const nextUser = session?.user || null;
+      setUser(nextUser);
+      await fetchProfile(nextUser);
+      setLoading(false);
     });
 
     return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-      clearTimeout(timer);
+      mounted = false;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      sub?.subscription?.unsubscribe?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <AuthContext.Provider value={{ user, role, loading, refresh }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      role,
+      displayName,
+      loading,
+      refresh,
+    }),
+    [user, role, displayName, loading]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
+  return ctx;
 }
