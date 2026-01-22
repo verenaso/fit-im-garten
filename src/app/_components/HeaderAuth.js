@@ -17,24 +17,81 @@ export default function HeaderAuth() {
   }
 
   if (loading) {
-    return <div className="text-sm opacity-80">Prüfe Login…</div>;
+    return (
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          padding: "8px 10px",
+          borderRadius: 12,
+          background: "rgba(255,255,255,0.16)",
+          border: "1px solid rgba(255,255,255,0.28)",
+          color: "white",
+        }}
+      >
+        Prüfe Login…
+      </div>
+    );
   }
 
   if (!user) {
     return (
-      <a className="btn btn-secondary btn-sm" href="/login">
+      <a
+        href="/login"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: 40,
+          padding: "0 14px",
+          borderRadius: 14,
+          background: "rgba(255,255,255,0.18)",
+          border: "1px solid rgba(255,255,255,0.32)",
+          color: "white",
+          fontWeight: 800,
+          textDecoration: "none",
+        }}
+      >
         Login
       </a>
     );
   }
 
   return (
-    <div className="ui-row" style={{ gap: 10 }}>
-      <div style={{ textAlign: "right", lineHeight: 1.1 }}>
-        <div style={{ fontWeight: 800, fontSize: 13 }}>{displayName || "Eingeloggt"}</div>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div
+        style={{
+          padding: "8px 10px",
+          borderRadius: 999,
+          background: "rgba(255,255,255,0.16)",
+          border: "1px solid rgba(255,255,255,0.28)",
+          color: "white",
+          fontWeight: 800,
+          fontSize: 12,
+          maxWidth: 220,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+        title={displayName || user.email}
+      >
+        {displayName || user.email}
       </div>
 
-      <button className="btn btn-ghost btn-sm" onClick={onLogout} type="button">
+      <button
+        onClick={onLogout}
+        type="button"
+        style={{
+          height: 40,
+          padding: "0 14px",
+          borderRadius: 14,
+          background: "white",
+          border: "1px solid rgba(255,255,255,0.9)",
+          color: "#332A44",
+          fontWeight: 900,
+          cursor: "pointer",
+        }}
+      >
         Logout
       </button>
     </div>
