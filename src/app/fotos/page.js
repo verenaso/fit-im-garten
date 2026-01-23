@@ -336,7 +336,6 @@ export default function FotosPage() {
     <div style={{ padding: 16, paddingBottom: 96, maxWidth: 720, margin: "0 auto" }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>Fotos</h1>
       <p style={{ marginTop: 0, marginBottom: 16, color: "#444" }}>
-        Lade Workout-Fotos hoch und kommentiere.
       </p>
 
       {!user && !authLoading && (
