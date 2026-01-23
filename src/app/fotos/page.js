@@ -334,7 +334,7 @@ export default function FotosPage() {
 
   return (
     <div style={{ padding: 16, paddingBottom: 96, maxWidth: 720, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>Fotos</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}></h1>
       <p style={{ marginTop: 0, marginBottom: 16, color: "#444" }}>
       </p>
 
@@ -462,7 +462,7 @@ export default function FotosPage() {
       {/* Galerie */}
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
         <h2 style={{ fontSize: 18, margin: 0 }}>Galerie</h2>
-        <div style={{ fontSize: 12, color: "#666" }}>{items.length} Fotos</div>
+        <div style={{ fontSize: 12, color: "#666" }}>{items.length}</div>
       </div>
 
       {pageLoading ? (
