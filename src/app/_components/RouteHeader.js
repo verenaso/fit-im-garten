@@ -6,35 +6,28 @@ import PageHeader from "./PageHeader";
 export default function RouteHeader() {
   const pathname = usePathname() || "";
 
-  // Seiten ohne lila Box (z.B. Login/Register/Home)
-  if (
-    pathname === "/" ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/register")
-  ) {
+  // Seiten ohne lila Box
+  if (pathname === "/" || pathname.startsWith("/login") || pathname.startsWith("/register")) {
     return null;
   }
 
   // Damit Termine nicht doppelt wird, solange Termine-Seite noch eigenen Header hat
   if (pathname.startsWith("/termine")) return null;
 
-  // Mapping für deine Routen
-  const map = {
-    "/uebungen": { title: "Neu", subtitle: "Workouts zusammenstellen & hinzufügen" },
-    "/workouts": { title: "Historie", subtitle: "Vergangene Workouts & Termine" },
-    "/fotos": { title: "Fotos", subtitle: "Momente aus Fit im Garten" },
-  };
+  // Wichtig: erst spezifische Pfade, dann allgemeine
+  const rules = [
+    { prefix: "/workouts/neu", title: "Neu", subtitle: "Neues Workout erstellen" },
+    { prefix: "/uebungen", title: "Übungen", subtitle: "Übungsdatenbank" },
+    { prefix: "/workouts", title: "Historie", subtitle: "Vergangene Workouts" },
+    { prefix: "/fotos", title: "Fotos", subtitle: "Momente aus Fit im Garten" },
+  ];
 
-  // passende Route finden (auch für Unterseiten)
-  const entry =
-    Object.entries(map).find(([key]) => pathname === key || pathname.startsWith(key + "/"))?.[1];
+  const hit = rules.find((r) => pathname === r.prefix || pathname.startsWith(r.prefix + "/"));
 
-  // Fallback: wenn mal neue Seite dazukommt
-  const title =
-    entry?.title ||
-    (pathname.split("/").filter(Boolean)[0] || "Fit im Garten").replace(/^\w/, (c) => c.toUpperCase());
+  if (hit) return <PageHeader title={hit.title} subtitle={hit.subtitle} />;
 
-  const subtitle = entry?.subtitle || "";
-
-  return <PageHeader title={title} subtitle={subtitle} />;
+  // Fallback: erster Pfadteil
+  const base = pathname.split("/").filter(Boolean)[0] || "Fit im Garten";
+  const title = base.replace(/^\w/, (c) => c.toUpperCase());
+  return <PageHeader title={title} subtitle="" />;
 }

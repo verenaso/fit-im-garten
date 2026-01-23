@@ -118,9 +118,7 @@ export default function BottomNav() {
       <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <NavItem href="/termine" label="Termine" icon={<IconCalendar />} />
         <NavItem href="/uebungen" label="Übungen" icon={<IconDumbbell />} />
-        {/* ✅ Neu -> /uebungen */}
-        <NavItem href="/uebungen" label="Neu" icon={<IconPlus />} />
-        {/* ✅ Historie -> /workouts */}
+        <NavItem href="/workouts/neu" label="Neu" icon={<IconPlus />} />
         <NavItem href="/workouts" label="Historie" icon={<IconHistory />} />
         <NavItem href="/fotos" label="Fotos" icon={<IconPhoto />} />
       </div>
