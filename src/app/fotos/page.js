@@ -1,352 +1,426 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "../_components/AuthProvider";
 
-const BUCKET = "workout-fotos";
-
-function withTimeout(promise, ms, label) {
-  let t;
-  const timeout = new Promise((_, reject) => {
-    t = setTimeout(() => reject(new Error(`${label} Timeout nach ${ms}ms`)), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
-}
-
-function fmtDate(iso) {
-  try {
-    return new Date(iso).toLocaleString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return "";
-  }
-}
-
-const PATH_CANDIDATES = ["path", "file_path", "storage_path", "object_path", "key"];
-
-function pickFilePath(row) {
-  if (!row) return null;
-  for (const k of PATH_CANDIDATES) {
-    if (row[k]) return row[k];
-  }
-  return null;
-}
-
-function detectPathColumn(rows) {
-  for (const r of rows || []) {
-    if (!r || typeof r !== "object") continue;
-    for (const k of PATH_CANDIDATES) {
-      if (Object.prototype.hasOwnProperty.call(r, k)) {
-        if (r[k]) return k;
-      }
-    }
-  }
-  const first = (rows || [])[0];
-  if (first && typeof first === "object") {
-    for (const k of PATH_CANDIDATES) {
-      if (Object.prototype.hasOwnProperty.call(first, k)) return k;
-    }
-  }
-  return "path";
-}
+/**
+ * Fotos – stabiler MVP
+ * - Listet Fotos aus DB (photos)
+ * - Holt Signed URLs für die Storage-Paths
+ * - Upload: Storage upload -> DB insert (taken_on NOT NULL)
+ *
+ * Annahmen:
+ * - AuthProvider exportiert useAuth() mit { user, role, loading }
+ * - Bucket: workout-fotos
+ * - DB table: photos(id, user_id, path, caption, taken_on NOT NULL, created_at)
+ */
 
 export default function FotosPage() {
   const { user, role, loading: authLoading } = useAuth();
-  const isAdmin = role === "admin";
 
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]); // { id, path, caption, taken_on, created_at, url }
+  const [pageLoading, setPageLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [items, setItems] = useState([]);
-  const [caption, setCaption] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
 
-  const [pathColumn, setPathColumn] = useState("path");
-  const pathColumnLabel = useMemo(() => pathColumn || "path", [pathColumn]);
+  const [caption, setCaption] = useState("");
+  const [takenOn, setTakenOn] = useState(""); // optional, ISO-date string "YYYY-MM-DD" vom Input
+  const fileRef = useRef(null);
 
-  async function loadPhotos() {
-    setError("");
-    setLoading(true);
+  const bucketName = "workout-fotos";
 
-    try {
-      const { data, error: e } = await withTimeout(
-        supabase.from("photos").select("*").order("created_at", { ascending: false }),
-        12000,
-        "DB: Fotos laden"
-      );
-      if (e) throw e;
-
-      const rows = data || [];
-      setPathColumn(detectPathColumn(rows));
-
-      if (rows.length === 0) {
-        setItems([]);
-        return;
-      }
-
-      const limited = rows.slice(0, 60);
-      const paths = limited.map((r) => pickFilePath(r)).filter(Boolean);
-
-      let signedMap = {};
-      if (paths.length > 0) {
-        const { data: signedData, error: se } = await withTimeout(
-          supabase.storage.from(BUCKET).createSignedUrls(paths, 60 * 60),
-          12000,
-          "Storage: Signed URLs"
-        );
-        if (se) throw se;
-
-        signedMap = {};
-        for (const entry of signedData || []) {
-          if (entry?.path && entry?.signedUrl && !entry?.error) {
-            signedMap[entry.path] = entry.signedUrl;
-          }
-        }
-      }
-
-      const withUrls = rows.map((r) => {
-        const fp = pickFilePath(r);
-        return {
-          ...r,
-          __file_path: fp,
-          url: fp ? signedMap[fp] || null : null,
-        };
-      });
-
-      setItems(withUrls);
-    } catch (e) {
-      setItems([]);
-      setError(
-        (e?.message || "Fehler beim Laden der Fotos.") +
-          "\n\nHinweis: Falls hier Policies stehen, ist es RLS/Storage."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const canUpload = useMemo(() => !!user && !authLoading, [user, authLoading]);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       setItems([]);
-      setLoading(false);
+      setPageLoading(false);
       return;
     }
     loadPhotos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authLoading, user?.id]);
+  }, [authLoading, user]);
 
-  async function onUpload(e) {
-    e.preventDefault();
-    if (!user) return;
-
-    const file = e.target?.elements?.file?.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
+  async function loadPhotos() {
     setError("");
+    setInfo("");
+    setPageLoading(true);
 
     try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const safeExt = ext.length <= 5 ? ext : "jpg";
-      const id =
-        (globalThis.crypto && crypto.randomUUID && crypto.randomUUID()) ||
-        `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      // Admin darf (per RLS) ggf. alle sehen, Member typischerweise nur eigene.
+      const { data, error: dbErr } = await supabase
+        .from("photos")
+        .select("id, user_id, path, caption, taken_on, created_at")
+        .order("taken_on", { ascending: false })
+        .limit(200);
 
-      const fileName = `${id}.${safeExt}`;
-      const storagePath = `${user.id}/${fileName}`;
+      if (dbErr) throw dbErr;
 
-      // 1) Upload to storage
-      const { error: upErr } = await withTimeout(
-        supabase.storage.from(BUCKET).upload(storagePath, file, { upsert: false }),
-        20000,
-        "Storage: Upload"
-      );
-      if (upErr) throw upErr;
+      const rows = data || [];
 
-      // 2) Insert DB row
-      // IMPORTANT: taken_on is NOT NULL in your schema -> must be provided.
-      const nowIso = new Date().toISOString();
+      // Signed URLs parallel holen (stabil: pro Path 1 request; bei vielen Bildern kann man später optimieren)
+      const withUrls = await Promise.all(
+        rows.map(async (row) => {
+          const { data: signed, error: signedErr } = await supabase.storage
+            .from(bucketName)
+            .createSignedUrl(row.path, 60 * 60); // 1h
 
-      const payload = {
-        user_id: user.id,
-        caption: caption.trim() || null,
-        taken_on: nowIso,
-        [pathColumnLabel]: storagePath,
-      };
-
-      const { error: insErr } = await withTimeout(
-        supabase.from("photos").insert(payload),
-        12000,
-        `DB: Insert (Spalte: ${pathColumnLabel})`
+          // Wenn SignedUrl fehlschlägt, lassen wir url leer, aber crashen nicht
+          if (signedErr) {
+            return { ...row, url: "" };
+          }
+          return { ...row, url: signed?.signedUrl || "" };
+        })
       );
 
-      if (insErr) throw insErr;
-
-      setCaption("");
-      e.target.reset();
-      await loadPhotos();
+      setItems(withUrls);
     } catch (e) {
-      setError(
-        (e?.message || "Upload fehlgeschlagen.") +
-          `\n\nDebug: DB-Pfadspalte="${pathColumnLabel}", taken_on wird gesetzt.` +
-          "\nWenn jetzt noch Fehler kommen: meist RLS (INSERT) oder Storage-Policy (UPLOAD)."
-      );
+      setError(normalizeSupabaseError(e));
+    } finally {
+      setPageLoading(false);
+    }
+  }
+
+  async function handleUpload(e) {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+
+    if (!user) {
+      setError("Du bist nicht eingeloggt.");
+      return;
+    }
+
+    const file = fileRef.current?.files?.[0];
+    if (!file) {
+      setError("Bitte wähle ein Foto aus.");
+      return;
+    }
+
+    // Basic Guardrails (MVP)
+    if (!file.type?.startsWith("image/")) {
+      setError("Bitte wähle eine Bilddatei aus (z.B. JPG/PNG).");
+      return;
+    }
+
+    // taken_on ist NOT NULL: MVP default = heute
+    // Wenn User ein Datum auswählt, speichern wir es als ISO (mit Uhrzeit 00:00:00Z)
+    const takenOnIso = takenOn
+      ? new Date(`${takenOn}T00:00:00.000Z`).toISOString()
+      : new Date().toISOString();
+
+    setUploading(true);
+
+    // Wir machen: 1) Storage upload  2) DB insert
+    // Wenn DB insert failt, löschen wir das Storage-Objekt wieder (Cleanup).
+    const fileExt = getFileExtension(file.name) || "jpg";
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const path = `${user.id}/${fileName}`;
+
+    try {
+      // 1) Storage Upload
+      const { error: storageErr } = await supabase.storage
+        .from(bucketName)
+        .upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type || "image/jpeg",
+        });
+
+      if (storageErr) throw storageErr;
+
+      // 2) DB Insert
+      const { data: inserted, error: insertErr } = await supabase
+        .from("photos")
+        .insert([
+          {
+            user_id: user.id,
+            path,
+            caption: caption?.trim() ? caption.trim() : null,
+            taken_on: takenOnIso,
+          },
+        ])
+        .select("id, user_id, path, caption, taken_on, created_at")
+        .single();
+
+      if (insertErr) {
+        // Cleanup (best effort)
+        await supabase.storage.from(bucketName).remove([path]);
+        throw insertErr;
+      }
+
+      // Signed URL für sofortige Anzeige holen
+      const { data: signed } = await supabase.storage
+        .from(bucketName)
+        .createSignedUrl(path, 60 * 60);
+
+      const newItem = { ...inserted, url: signed?.signedUrl || "" };
+
+      // UI Update: oben einfügen
+      setItems((prev) => [newItem, ...prev]);
+
+      // Reset Form
+      if (fileRef.current) fileRef.current.value = "";
+      setCaption("");
+      setTakenOn("");
+      setInfo("Upload erfolgreich ✅");
+    } catch (e) {
+      setError(normalizeSupabaseError(e));
     } finally {
       setUploading(false);
     }
   }
 
-  async function onDelete(photoId) {
-    const ok = confirm("Foto wirklich löschen?");
-    if (!ok) return;
-
-    setError("");
-
-    try {
-      const { data, error: fe } = await withTimeout(
-        supabase.from("photos").select("*").eq("id", photoId).single(),
-        12000,
-        "DB: Foto laden"
-      );
-      if (fe) throw fe;
-
-      const storagePath = pickFilePath(data);
-
-      const { error: de } = await withTimeout(
-        supabase.from("photos").delete().eq("id", photoId),
-        12000,
-        "DB: Foto löschen"
-      );
-      if (de) throw de;
-
-      if (storagePath) {
-        await supabase.storage.from(BUCKET).remove([storagePath]);
-      }
-
-      await loadPhotos();
-    } catch (e) {
-      setError(e?.message || "Konnte Foto nicht löschen.");
-    }
+  async function handleRefresh() {
+    await loadPhotos();
   }
 
   return (
-    <main className="page">
-      <div>
-        <h1 className="page-title">Fotos</h1>
-        <div className="page-subtitle">
-          Bucket: <strong>{BUCKET}</strong> · DB-Pfadspalte: <strong>{pathColumnLabel}</strong>
+    <div style={{ padding: 16, paddingBottom: 96, maxWidth: 720, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 6 }}>Fotos</h1>
+      <p style={{ marginTop: 0, marginBottom: 16, color: "#444" }}>
+        Lade Workout-Fotos hoch und schau dir die Galerie an.
+      </p>
+
+      {!user && !authLoading && (
+        <div
+          style={{
+            border: "1px solid #eee",
+            borderRadius: 12,
+            padding: 12,
+            background: "#fafafa",
+            marginBottom: 16,
+          }}
+        >
+          Bitte einloggen, um Fotos zu sehen oder hochzuladen.
         </div>
+      )}
+
+      {error && (
+        <div
+          style={{
+            border: "1px solid #f3c0c0",
+            background: "#fff5f5",
+            color: "#7a1f1f",
+            borderRadius: 12,
+            padding: 12,
+            marginBottom: 16,
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {info && (
+        <div
+          style={{
+            border: "1px solid #cfe9d4",
+            background: "#f3fff5",
+            color: "#1f6b2b",
+            borderRadius: 12,
+            padding: 12,
+            marginBottom: 16,
+          }}
+        >
+          {info}
+        </div>
+      )}
+
+      {/* Upload */}
+      <div
+        style={{
+          border: "1px solid #eee",
+          borderRadius: 14,
+          padding: 14,
+          marginBottom: 18,
+          background: "#fff",
+        }}
+      >
+        <h2 style={{ fontSize: 18, margin: 0, marginBottom: 10 }}>Neues Foto</h2>
+
+        <form onSubmit={handleUpload} style={{ display: "grid", gap: 10 }}>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            disabled={!canUpload || uploading}
+            style={{ width: "100%" }}
+          />
+
+          <input
+            type="text"
+            placeholder="Caption (optional)"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            disabled={!canUpload || uploading}
+            style={inputStyle}
+          />
+
+          <div style={{ display: "grid", gap: 6 }}>
+            <label style={{ fontSize: 12, color: "#555" }}>
+              Aufnahmedatum (optional – sonst heute)
+            </label>
+            <input
+              type="date"
+              value={takenOn}
+              onChange={(e) => setTakenOn(e.target.value)}
+              disabled={!canUpload || uploading}
+              style={inputStyle}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={!canUpload || uploading}
+            style={{
+              height: 42,
+              borderRadius: 12,
+              border: "1px solid #ddd",
+              background: uploading ? "#f5f5f5" : "#111",
+              color: uploading ? "#777" : "#fff",
+              fontWeight: 600,
+              cursor: uploading ? "default" : "pointer",
+            }}
+          >
+            {uploading ? "Lade hoch…" : "Hochladen"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={!user || uploading || pageLoading}
+            style={{
+              height: 42,
+              borderRadius: 12,
+              border: "1px solid #ddd",
+              background: "#fff",
+              color: "#111",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Aktualisieren
+          </button>
+        </form>
+
+        {user && (
+          <div style={{ marginTop: 10, fontSize: 12, color: "#666" }}>
+            Eingeloggt als: <b>{user.email}</b> · Rolle: <b>{role || "?"}</b>
+          </div>
+        )}
       </div>
 
-      {authLoading ? (
-        <p className="text-gray-600">Prüfe Login…</p>
-      ) : !user ? (
-        <p className="text-gray-700">
-          Du bist nicht eingeloggt. Bitte logge dich ein, um Fotos zu sehen.
-        </p>
+      {/* Galerie */}
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+        <h2 style={{ fontSize: 18, margin: 0 }}>Galerie</h2>
+        <div style={{ fontSize: 12, color: "#666" }}>{items.length} Fotos</div>
+      </div>
+
+      {pageLoading ? (
+        <div style={{ marginTop: 12, color: "#666" }}>Lade Fotos…</div>
+      ) : items.length === 0 ? (
+        <div style={{ marginTop: 12, color: "#666" }}>
+          Noch keine Fotos vorhanden.
+        </div>
       ) : (
-        <>
-          <div className="card card-pad stack">
-            <div className="section-title">Foto hochladen</div>
-
-            <form onSubmit={onUpload} className="stack">
-              <div className="stack-sm">
-                <div className="label">Bilddatei</div>
-                <input className="input" name="file" type="file" accept="image/*" required />
-              </div>
-
-              <div className="stack-sm">
-                <div className="label">Beschreibung (optional)</div>
-                <input
-                  className="input"
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="z.B. Workout am Sonntag 💪"
-                />
-                <div className="help">Für MVP setzen wir “taken_on” automatisch auf jetzt.</div>
-              </div>
-
-              <button className="btn btn-primary btn-full" type="submit" disabled={uploading}>
-                {uploading ? "Lade hoch…" : "Hochladen"}
-              </button>
-
-              {error ? (
-                <pre
-                  style={{
-                    whiteSpace: "pre-wrap",
-                    marginTop: 6,
-                    padding: 12,
-                    borderRadius: 14,
-                    background: "rgba(92,76,124,0.06)",
-                    border: "1px solid rgba(92,76,124,0.14)",
-                    color: "rgba(31,27,43,0.84)",
-                    fontSize: 12,
-                  }}
-                >
-                  {error}
-                </pre>
-              ) : null}
-            </form>
-          </div>
-
-          <div className="divider" />
-
-          <div className="stack">
-            <div className="section-title">Uploads</div>
-
-            {loading ? (
-              <p className="text-gray-600">Lade…</p>
-            ) : items.length === 0 ? (
-              <p className="text-gray-600">Noch keine Fotos.</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {items.map((p) => (
-                  <div key={p.id} className="card card-pad stack-sm">
-                    {p.url ? (
-                      <img
-                        src={p.url}
-                        alt={p.caption || "Foto"}
-                        style={{
-                          width: "100%",
-                          height: 240,
-                          objectFit: "cover",
-                          borderRadius: 14,
-                          border: "1px solid rgba(31,27,43,0.10)",
-                          background: "rgba(31,27,43,0.04)",
-                        }}
-                      />
-                    ) : (
-                      <div className="text-gray-600" style={{ fontSize: 13 }}>
-                        Bild konnte nicht geladen werden.
-                      </div>
-                    )}
-
-                    <div className="stack-sm">
-                      <div className="help">
-                        {p.taken_on ? `Aufgenommen: ${fmtDate(p.taken_on)}` : null}
-                        {p.created_at ? `${p.taken_on ? " · " : ""}Upload: ${fmtDate(p.created_at)}` : null}
-                      </div>
-                      {p.caption ? <div>{p.caption}</div> : null}
-                    </div>
-
-                    {isAdmin ? (
-                      <button className="btn btn-danger btn-full" onClick={() => onDelete(p.id)} type="button">
-                        Löschen
-                      </button>
-                    ) : null}
+        <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+          {items.map((it) => (
+            <div
+              key={it.id}
+              style={{
+                border: "1px solid #eee",
+                borderRadius: 14,
+                overflow: "hidden",
+                background: "#fff",
+              }}
+            >
+              <div style={{ width: "100%", background: "#fafafa" }}>
+                {it.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={it.url}
+                    alt={it.caption || "Workout Foto"}
+                    style={{ width: "100%", height: "auto", display: "block" }}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div style={{ padding: 12, color: "#777" }}>
+                    Bild konnte nicht geladen werden (Signed URL fehlgeschlagen).
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
-        </>
+
+              <div style={{ padding: 12 }}>
+                <div style={{ fontWeight: 650, marginBottom: 4 }}>
+                  {formatDate(it.taken_on)}
+                </div>
+                {it.caption ? (
+                  <div style={{ color: "#333" }}>{it.caption}</div>
+                ) : (
+                  <div style={{ color: "#777" }}>—</div>
+                )}
+
+                <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>
+                  {it.created_at ? `Upload: ${formatDateTime(it.created_at)}` : ""}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
-    </main>
+
+      <div style={{ marginTop: 20, fontSize: 12, color: "#777" }}>
+        Hinweis: Wenn Upload/Anzeige trotz Code scheitert, ist es fast immer eine RLS/Storage Policy.
+      </div>
+    </div>
   );
+}
+
+const inputStyle = {
+  height: 42,
+  borderRadius: 12,
+  border: "1px solid #ddd",
+  padding: "0 12px",
+  outline: "none",
+};
+
+function getFileExtension(name) {
+  const parts = String(name || "").split(".");
+  if (parts.length < 2) return "";
+  return parts.pop().toLowerCase();
+}
+
+function formatDate(iso) {
+  try {
+    const d = new Date(iso);
+    return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(d);
+  } catch {
+    return iso || "";
+  }
+}
+
+function formatDateTime(iso) {
+  try {
+    const d = new Date(iso);
+    return new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(d);
+  } catch {
+    return iso || "";
+  }
+}
+
+function normalizeSupabaseError(e) {
+  // Supabase Errors sind oft { message, details, hint, code }
+  if (!e) return "Unbekannter Fehler.";
+  if (typeof e === "string") return e;
+
+  const msg = e.message || "Fehler";
+  const details = e.details ? `\nDetails: ${e.details}` : "";
+  const hint = e.hint ? `\nHint: ${e.hint}` : "";
+  const code = e.code ? `\nCode: ${e.code}` : "";
+
+  return `${msg}${details}${hint}${code}`.trim();
 }
