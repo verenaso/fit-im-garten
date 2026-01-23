@@ -110,14 +110,15 @@ export default function TerminePage() {
         </p>
       ) : (
         <>
-          <p className="mt-2 text-gray-600">
-            Eingeloggt {isAdmin ? "(Admin)" : "(Mitglied)"}
-          </p>
 
-          {/* Abstimmungstool ganz oben */}
-          <div className="mt-6">
-            <PollWidget />
-          </div>
+      <div className="mt-6 ui-card ui-card-pad-lg">
+      <div className="ui-section-title" style={{ marginBottom: 8 }}>Abstimmung</div>
+       <div className="ui-muted" style={{ fontSize: 13, marginBottom: 12, color: "var(--c-darker)" }}>
+    Tippe auf eine Option und speichere deine Stimme.
+  </div>
+  <PollWidget />
+</div>
+
 
           {/* Admin: Termin anlegen */}
           {canCreate ? (
@@ -177,54 +178,55 @@ export default function TerminePage() {
                 </button>
               </div>
 
-              <div className="help">
-                Hinweis: Nur Admins können Termine anlegen oder löschen.
-              </div>
             </form>
           ) : (
             <div className="mt-6 ui-empty">Nur Admins können Termine anlegen oder löschen.</div>
           )}
 
           {/* Termine Liste */}
-          <div className="mt-6">
-            <div className="ui-section-title">Kommende Termine</div>
+ <div className="mt-6 ui-card ui-card-pad-lg">
+  <div className="ui-section-title" style={{ marginBottom: 8 }}>Termine</div>
+  <div className="ui-muted" style={{ fontSize: 13, marginBottom: 12, color: "var(--c-darker)" }}>
+    Kommende Workouts und Treffpunkte.
+  </div>
 
-            {loading ? (
-              <div className="ui-empty">Lade…</div>
-            ) : termine.length === 0 ? (
-              <div className="ui-empty">Noch keine Termine.</div>
-            ) : (
-              <div className="ui-list">
-                {termine.map((t) => (
-                  <div key={t.id} className="ui-card ui-card-pad">
-                    <div style={{ fontWeight: 800, color: "var(--c-darker)" }}>
-                      {fmtDateTime(t.starts_at)}
-                    </div>
-                    <div className="ui-muted" style={{ color: "var(--c-darker)" }}>
-                      {t.location}
-                    </div>
-                    {t.note ? (
-                      <div style={{ marginTop: 8, color: "var(--c-darker)", opacity: 0.9 }}>
-                        {t.note}
-                      </div>
-                    ) : null}
-
-                    {isAdmin ? (
-                      <div className="ui-row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          type="button"
-                          onClick={() => onDelete(t.id)}
-                        >
-                          Löschen
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            )}
+  {loading ? (
+    <div className="ui-empty">Lade…</div>
+  ) : termine.length === 0 ? (
+    <div className="ui-empty">Noch keine Termine.</div>
+  ) : (
+    <div className="ui-list">
+      {termine.map((t) => (
+        <div key={t.id} className="ui-card ui-card-pad">
+          <div style={{ fontWeight: 800, color: "var(--c-darker)" }}>
+            {fmtDateTime(t.starts_at)}
           </div>
+          <div className="ui-muted" style={{ color: "var(--c-darker)" }}>
+            {t.location}
+          </div>
+          {t.note ? (
+            <div style={{ marginTop: 8, color: "var(--c-darker)", opacity: 0.9 }}>
+              {t.note}
+            </div>
+          ) : null}
+
+          {isAdmin ? (
+            <div className="ui-row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
+              <button
+                className="btn btn-danger btn-sm"
+                type="button"
+                onClick={() => onDelete(t.id)}
+              >
+                Löschen
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
         </>
       )}
     </main>

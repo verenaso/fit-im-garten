@@ -52,9 +52,6 @@ export default function PollWidget() {
   const [namesByOption, setNamesByOption] = useState({});
   const [error, setError] = useState("");
 
-  // Debug
-  const [debugNameStats, setDebugNameStats] = useState(null);
-
   // Admin editor
   const [adminOpen, setAdminOpen] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -82,7 +79,7 @@ export default function PollWidget() {
 
   async function getNameMapForUserIds(userIds) {
     const ids = uniq((userIds || []).filter(Boolean).map((x) => String(x)));
-    if (ids.length === 0) return { map: {}, stats: { ids: 0, found: 0, via: "none" } };
+    if (ids.length === 0) return {};
 
     // 1) RPC
     try {
@@ -95,50 +92,34 @@ export default function PollWidget() {
         const n = (r.name || "").trim();
         if (n) map[k] = n;
       }
-
-      const found = Object.keys(map).length;
-      if (found > 0) return { map, stats: { ids: ids.length, found, via: "rpc" } };
-
-      // Wenn RPC zwar läuft, aber nix zurückgibt: weiter mit Fallback
-    } catch (e) {
-      // RPC Fehler -> wir versuchen Fallback und zeigen den Fehler nicht sofort,
-      // damit nicht alles kaputt wirkt. Für Admin packen wir’s in Stats.
-      // (Der eigentliche error wird unten nur gesetzt, wenn auch Fallback scheitert.)
-      // eslint-disable-next-line no-unused-vars
-      const _ = e;
+      if (Object.keys(map).length > 0) return map;
+    } catch {
+      // ignore -> fallback
     }
 
-    // 2) Fallback: direkt profiles lesen (falls Policy vorhanden)
-    try {
-      const { data: profs, error: pe } = await supabase
-        .from("profiles")
-        .select('id, "Display name", display_name, username')
-        .in("id", ids);
+    // 2) Fallback profiles
+    const { data: profs, error: pe } = await supabase
+      .from("profiles")
+      .select('id, "Display name", display_name, username')
+      .in("id", ids);
 
-      if (pe) throw pe;
+    if (pe) throw pe;
 
-      const map = {};
-      for (const p of profs || []) {
-        const k = String(p.id);
-        const n =
-          String(p["Display name"] || "").trim() ||
-          String(p.display_name || "").trim() ||
-          String(p.username || "").trim();
-        if (n) map[k] = n;
-      }
-
-      const found = Object.keys(map).length;
-      return { map, stats: { ids: ids.length, found, via: "profiles-fallback" } };
-    } catch (e) {
-      // beides fehlgeschlagen -> wir werfen, damit es oben angezeigt wird
-      throw e;
+    const map = {};
+    for (const p of profs || []) {
+      const k = String(p.id);
+      const n =
+        String(p["Display name"] || "").trim() ||
+        String(p.display_name || "").trim() ||
+        String(p.username || "").trim();
+      if (n) map[k] = n;
     }
+    return map;
   }
 
   async function loadActivePoll() {
     setError("");
     setLoading(true);
-    setDebugNameStats(null);
 
     try {
       const { data: pollData, error: pollErr } = await supabase
@@ -194,11 +175,7 @@ export default function PollWidget() {
 
       let profileMap = {};
       if (userIds.length > 0) {
-        const { map, stats } = await getNameMapForUserIds(userIds);
-        profileMap = map;
-        if (isAdmin) setDebugNameStats(stats);
-      } else {
-        if (isAdmin) setDebugNameStats({ ids: 0, found: 0, via: "none" });
+        profileMap = await getNameMapForUserIds(userIds);
       }
 
       const mapByOption = {};
@@ -481,9 +458,9 @@ export default function PollWidget() {
     const rest = list.length - shown.length;
 
     return (
-      <div className="ui-muted" style={{ fontSize: 12, color: "var(--c-darker)", marginTop: 6 }}>
+      <div className="ui-muted" style={{ fontSize: 12, color: "var(--c-darker)", marginTop: 8 }}>
         <div style={{ fontWeight: 700, opacity: 0.9 }}>Abgestimmt:</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
           {shown.map((x) => (
             <span key={x} className="ui-badge" style={{ fontSize: 11 }}>
               {x}
@@ -502,23 +479,31 @@ export default function PollWidget() {
   if (authLoading) return null;
 
   return (
-    <div className="ui-card ui-card-pad-lg" style={{ marginBottom: 16 }}>
-      <div className="ui-toolbar" style={{ marginBottom: 10 }}>
-        <div className="ui-toolbar-left">
-          <div className="ui-section-title" style={{ marginBottom: 0 }}>
-            Abstimmung
-          </div>
+    <div>
+      {/* Header / Status */}
+      <div className="ui-row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <div className="ui-row" style={{ gap: 8, flexWrap: "wrap" }}>
           {poll ? (
-            <span className="ui-badge">
-              {closed ? "geschlossen" : "offen"} · {remainingText()}
-            </span>
+            <>
+              <span
+                className="ui-badge"
+                style={{
+                  background: closed ? "rgba(0,0,0,0.06)" : "rgba(17,17,17,0.10)",
+                  color: "var(--c-darker)",
+                  border: "1px solid rgba(51, 42, 68, 0.14)",
+                }}
+              >
+                {closed ? "geschlossen" : "offen"}
+              </span>
+              <span className="ui-badge">{remainingText()}</span>
+            </>
           ) : (
             <span className="ui-badge">keine aktive Abstimmung</span>
           )}
         </div>
 
         {isAdmin ? (
-          <div className="ui-toolbar-right">
+          <div className="ui-row" style={{ gap: 8 }}>
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => openAdminWithPoll(poll)}
@@ -537,12 +522,6 @@ export default function PollWidget() {
         ) : null}
       </div>
 
-      {isAdmin && debugNameStats ? (
-        <div className="ui-empty" style={{ marginBottom: 10 }}>
-          Debug: Namen gefunden {debugNameStats.found}/{debugNameStats.ids} (via {debugNameStats.via})
-        </div>
-      ) : null}
-
       {error ? (
         <div className="ui-empty" style={{ marginBottom: 12, borderStyle: "solid" }}>
           {error}
@@ -557,23 +536,33 @@ export default function PollWidget() {
         </div>
       ) : (
         <>
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontWeight: 800, fontSize: 16, color: "var(--c-darker)" }}>{poll.title}</div>
+          {/* Title + description */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontWeight: 900, fontSize: 18, color: "var(--c-darker)", lineHeight: 1.2 }}>
+              {poll.title}
+            </div>
 
             {poll.description ? (
-              <div className="ui-muted" style={{ fontSize: 13, color: "var(--c-darker)" }}>
+              <div className="ui-muted" style={{ fontSize: 13, marginTop: 6, color: "var(--c-darker)" }}>
                 {poll.description}
               </div>
             ) : null}
 
             {poll.closes_at ? (
-              <div className="ui-muted" style={{ fontSize: 12, marginTop: 4, color: "var(--c-darker)" }}>
+              <div className="ui-muted" style={{ fontSize: 12, marginTop: 6, color: "var(--c-darker)" }}>
                 Ende: {new Date(poll.closes_at).toLocaleString("de-DE")}
+              </div>
+            ) : null}
+
+            {!closed && user?.id ? (
+              <div className="ui-muted" style={{ fontSize: 12, marginTop: 8, color: "var(--c-darker)" }}>
+                Tipp: Du kannst deine Auswahl jederzeit ändern und erneut speichern.
               </div>
             ) : null}
           </div>
 
-          <div className="ui-list" style={{ marginBottom: 12 }}>
+          {/* Options as clear click targets */}
+          <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
             {options.map((o) => {
               const checked = myVotes.has(o.id);
               const voteCount = counts[o.id] ?? 0;
@@ -583,49 +572,70 @@ export default function PollWidget() {
                   key={o.id}
                   type="button"
                   onClick={() => toggleOption(o.id)}
-                  className="ui-list-item"
                   disabled={!user?.id || closed}
                   style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "12px 12px",
+                    borderRadius: 14,
+                    border: checked
+                      ? "2px solid rgba(17,17,17,0.9)"
+                      : "1px solid rgba(51, 42, 68, 0.18)",
+                    background: checked ? "rgba(17,17,17,0.92)" : "rgba(92, 76, 124, 0.06)",
+                    color: checked ? "#fff" : "var(--c-darker)",
                     cursor: !user?.id || closed ? "not-allowed" : "pointer",
                     opacity: !user?.id || closed ? 0.75 : 1,
-                    background: checked ? "rgba(92, 76, 124, 0.14)" : "rgba(92, 76, 124, 0.05)",
-                    textAlign: "left",
+                    boxShadow: checked ? "0 1px 0 rgba(0,0,0,0.06)" : "none",
+                    transform: checked ? "translateY(-1px)" : "none",
                   }}
                 >
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-                    <div style={{ fontWeight: 800, color: "var(--c-darker)" }}>{o.label}</div>
-                    <div className="ui-muted" style={{ fontSize: 12, color: "var(--c-darker)" }}>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                      <div style={{ fontWeight: 900, fontSize: 15, lineHeight: 1.2 }}>{o.label}</div>
+                      <span
+                        className="ui-badge"
+                        style={{
+                          minWidth: 44,
+                          justifyContent: "center",
+                          background: checked ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.06)",
+                          color: checked ? "#fff" : "var(--c-darker)",
+                          border: "1px solid rgba(51, 42, 68, 0.14)",
+                        }}
+                      >
+                        {checked ? "✓" : ""}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: 12, opacity: checked ? 0.9 : 0.85 }}>
                       {voteCount} Stimme{voteCount === 1 ? "" : "n"}
                     </div>
 
                     {renderNames(o.id)}
                   </div>
-
-                  <span className="ui-badge" style={{ minWidth: 52, justifyContent: "center", alignSelf: "flex-start" }}>
-                    {checked ? "✓" : " "}
-                  </span>
                 </button>
               );
             })}
           </div>
 
+          {/* Actions */}
           {!user?.id ? (
             <div className="ui-empty">Bitte einloggen, um abzustimmen.</div>
           ) : closed ? (
             <div className="ui-empty">Diese Abstimmung ist geschlossen.</div>
           ) : (
-            <div className="ui-row" style={{ justifyContent: "flex-end" }}>
+            <div className="ui-row" style={{ justifyContent: "flex-end", gap: 8 }}>
               <button type="button" className="btn btn-ghost btn-sm" onClick={resetMyVotes} disabled={loading}>
                 Zurücksetzen
               </button>
               <button type="button" className="btn btn-primary btn-sm" onClick={saveVotes} disabled={loading}>
-                Abstimmen
+                Stimme speichern
               </button>
             </div>
           )}
         </>
       )}
 
+      {/* Admin editor (unchanged logic, but inside a clean divider) */}
       {isAdmin && adminOpen ? (
         <div style={{ marginTop: 16, borderTop: "1px solid rgba(51, 42, 68, 0.12)", paddingTop: 14 }}>
           <div className="ui-section-title" style={{ marginBottom: 10 }}>
@@ -719,7 +729,7 @@ export default function PollWidget() {
               </div>
             </div>
 
-            <div className="ui-row" style={{ justifyContent: "flex-end" }}>
+            <div className="ui-row" style={{ justifyContent: "flex-end", gap: 8 }}>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAdminOpen(false)} disabled={loading}>
                 Abbrechen
               </button>
