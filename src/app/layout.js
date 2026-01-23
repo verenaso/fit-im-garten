@@ -2,6 +2,7 @@ import "./globals.css";
 import Providers from "./_components/Providers";
 import HeaderAuth from "./_components/HeaderAuth";
 import BottomNav from "./_components/BottomNav";
+import RouteHeader from "./_components/RouteHeader";
 import { Inter } from "next/font/google";
 
 const inter = Inter({
@@ -21,9 +22,12 @@ export default function RootLayout({ children }) {
       <body>
         <Providers>
           <HeaderAuth />
+
           <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 14px" }}>
+            <RouteHeader />
             {children}
           </div>
+
           <BottomNav />
         </Providers>
       </body>
