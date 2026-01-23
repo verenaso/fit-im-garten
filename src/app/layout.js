@@ -1,4 +1,5 @@
 import "./globals.css";
+import Providers from "./_components/Providers";
 import HeaderAuth from "./_components/HeaderAuth";
 import BottomNav from "./_components/BottomNav";
 
@@ -11,9 +12,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="de">
       <body>
-        <HeaderAuth />
-        <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 14px" }}>{children}</div>
-        <BottomNav />
+        <Providers>
+          <HeaderAuth />
+          <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 14px" }}>
+            {children}
+          </div>
+          <BottomNav />
+        </Providers>
       </body>
     </html>
   );
