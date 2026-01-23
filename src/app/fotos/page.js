@@ -77,10 +77,12 @@ export default function FotosPage() {
             .createSignedUrl(row.storage_path, 60 * 60);
 
           return {
-            ...row,
-            uploader_name: profileMap[row.user_id] || "Unbekannt",
-            url: signedErr ? "" : signed?.signedUrl || "",
-          };
+  ...row,
+  uploader_name: profileMap[row.user_id] || "Unbekannt",
+  url: signedErr ? "" : signed?.signedUrl || "",
+  url_error: signedErr ? (signedErr.message || JSON.stringify(signedErr)) : "",
+};
+
         })
       );
 
@@ -497,9 +499,11 @@ export default function FotosPage() {
                       loading="lazy"
                     />
                   ) : (
-                    <div style={{ padding: 12, color: "#777" }}>
-                      Bild konnte nicht geladen werden (Signed URL fehlgeschlagen).
-                    </div>
+                  <div style={{ padding: 12, color: "#777", whiteSpace: "pre-wrap" }}>
+  Bild konnte nicht geladen werden.
+  {it.url_error ? `\n\nSigned URL Fehler: ${it.url_error}` : ""}
+</div>
+
                   )}
                 </div>
 
