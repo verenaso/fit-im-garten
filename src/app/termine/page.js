@@ -110,27 +110,18 @@ export default function TerminePage() {
         </p>
       ) : (
         <>
-          {/* Abschnitt: Abstimmung */}
+          {/* Poll (ohne extra Überschrift/Meta-Text auf der Seite) */}
           <div className="mt-6 ui-card ui-card-pad-lg">
-            <div className="ui-section-title" style={{ marginBottom: 8 }}>
-            </div>
-
             <PollWidget />
           </div>
 
-          {/* Abschnitt: Termine */}
+          {/* Termine */}
           <div className="mt-6 ui-card ui-card-pad-lg">
-            <div className="ui-section-title" style={{ marginBottom: 8 }}>
-              Termine
-            </div>
-            <div
-              className="ui-muted"
-              style={{ fontSize: 16, marginBottom: 12, color: "var(--c-darker)" }}
-            >
-              
+            <div className="ui-section-title" style={{ marginBottom: 10 }}>
+              Kommende Workouts
             </div>
 
-            {/* Admin: Termin anlegen (nur wenn Admin, ohne Hinweistext) */}
+            {/* Admin: Termin anlegen */}
             {canCreate ? (
               <form onSubmit={onCreate} className="ui-col" style={{ marginBottom: 14 }}>
                 <div className="ui-section-title" style={{ marginBottom: 10 }}>
@@ -190,13 +181,10 @@ export default function TerminePage() {
               </form>
             ) : null}
 
-            {/* Liste */}
-
+            {/* Liste: wenn leer -> gar nichts */}
             {loading ? (
               <div className="ui-empty">Lade…</div>
-            ) : termine.length === 0 ? (
-              <div className="ui-empty">Noch keine Termine.</div>
-            ) : (
+            ) : termine.length === 0 ? null : (
               <div className="ui-list">
                 {termine.map((t) => (
                   <div key={t.id} className="ui-card ui-card-pad">

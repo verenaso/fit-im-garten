@@ -57,7 +57,7 @@ export default function PollWidget() {
   const [options, setOptions] = useState([]);
   const [counts, setCounts] = useState({});
   const [myVotes, setMyVotes] = useState(new Set());
-  const [savedVotes, setSavedVotes] = useState(new Set()); // <- für Dirty-Check
+  const [savedVotes, setSavedVotes] = useState(new Set());
   const [namesByOption, setNamesByOption] = useState({});
   const [error, setError] = useState("");
 
@@ -214,7 +214,7 @@ export default function PollWidget() {
 
         const set = new Set((myVoteRows || []).map((r) => r.option_id));
         setMyVotes(set);
-        setSavedVotes(new Set(set)); // <- Snapshot für Dirty-Check
+        setSavedVotes(new Set(set));
       } else {
         setMyVotes(new Set());
         setSavedVotes(new Set());
@@ -354,11 +354,7 @@ export default function PollWidget() {
     setDraftClosesAt(p.closes_at ? toLocalDatetimeInputValue(p.closes_at) : "");
 
     const mapped = (options || []).map((o) => ({ key: o.id, label: o.label }));
-    setDraftOptions(
-      mapped.length >= 2
-        ? mapped
-        : [{ key: uid(), label: "" }, { key: uid(), label: "" }]
-    );
+    setDraftOptions(mapped.length >= 2 ? mapped : [{ key: uid(), label: "" }, { key: uid(), label: "" }]);
 
     setAdminOpen(true);
   }
@@ -462,14 +458,6 @@ export default function PollWidget() {
     }
   }
 
-  function remainingText() {
-    if (!poll) return "";
-    if (!poll.allow_multi || Number(poll.max_votes || 1) <= 1) return "1 Auswahl";
-    const used = myVotes.size;
-    const max = Math.max(1, Number(poll.max_votes || 1));
-    return `${used}/${max} gewählt`;
-  }
-
   function renderNames(optionId) {
     const list = namesByOption[optionId] || [];
     if (list.length === 0) return null;
@@ -497,27 +485,29 @@ export default function PollWidget() {
     );
   }
 
+  if (authLoading) return null;
 
+  return (
+    <div>
+      {/* Admin actions only */}
+      {isAdmin ? (
+        <div className="ui-row" style={{ justifyContent: "flex-end", gap: 8, marginBottom: 12 }}>
+          <button
+            className="btn btn-secondary btn-sm"
+            onClick={() => openAdminWithPoll(poll)}
+            disabled={loading}
+            type="button"
+          >
+            {poll ? "Bearbeiten" : "Neue Abstimmung"}
+          </button>
 
-        {isAdmin ? (
-          <div className="ui-row" style={{ gap: 8 }}>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => openAdminWithPoll(poll)}
-              disabled={loading}
-              type="button"
-            >
-              {poll ? "Bearbeiten" : "Neue Abstimmung"}
+          {poll ? (
+            <button className="btn btn-danger btn-sm" onClick={deletePoll} disabled={loading} type="button">
+              Löschen
             </button>
-
-            {poll ? (
-              <button className="btn btn-danger btn-sm" onClick={deletePoll} disabled={loading} type="button">
-                Löschen
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {error ? (
         <div className="ui-empty" style={{ marginBottom: 12, borderStyle: "solid" }}>
@@ -552,7 +542,7 @@ export default function PollWidget() {
             ) : null}
           </div>
 
-          {/* Options as clear click targets */}
+          {/* Options */}
           <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
             {options.map((o) => {
               const checked = myVotes.has(o.id);
@@ -581,14 +571,7 @@ export default function PollWidget() {
                   }}
                 >
                   <div style={{ display: "grid", gap: 6 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "space-between",
-                        gap: 10,
-                      }}
-                    >
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
                       <div style={{ fontWeight: 900, fontSize: 15, lineHeight: 1.2 }}>{o.label}</div>
                       <span
                         className="ui-badge"
