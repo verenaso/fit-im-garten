@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../_components/AuthProvider";
 import PollWidget from "./_components/PollWidget";
+import PageHeader from "../_components/PageHeader";
 
 function fmtDateTime(isoString) {
   const d = new Date(isoString);
@@ -110,14 +111,7 @@ function AccordionCard({ icon, title, open, onToggle, children }) {
           cursor: "pointer",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            justifyContent: "space-between",
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
             <div
               style={{
@@ -133,11 +127,8 @@ function AccordionCard({ icon, title, open, onToggle, children }) {
             >
               {icon}
             </div>
-
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 900, fontSize: 16, color: "var(--c-darker)", lineHeight: 1.1 }}>
-                {title}
-              </div>
+            <div style={{ fontWeight: 900, fontSize: 16, color: "var(--c-darker)", lineHeight: 1.1 }}>
+              {title}
             </div>
           </div>
 
@@ -159,18 +150,13 @@ export default function TerminePage() {
   const [termine, setTermine] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Admin Form
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [location, setLocation] = useState("");
   const [note, setNote] = useState("");
 
-  // Accordion state
   const [openPoll, setOpenPoll] = useState(true);
   const [openWorkouts, setOpenWorkouts] = useState(true);
-
-  // Hero image state (damit du sofort merkst, wenn Pfad falsch ist)
-  const [heroOk, setHeroOk] = useState(true);
 
   async function loadTermine() {
     setLoading(true);
@@ -243,65 +229,7 @@ export default function TerminePage() {
 
   return (
     <main className="min-h-screen" style={{ paddingBottom: 96 }}>
-      {/* HERO */}
-      <div
-        style={{
-          marginTop: 8,
-          borderRadius: 20,
-          overflow: "hidden",
-          position: "relative",
-          border: "1px solid rgba(51, 42, 68, 0.10)",
-          background: "#111",
-        }}
-      >
-        {/* echtes img, damit Fehler sichtbar werden */}
-        {heroOk ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src="/hero/termine.jpg"
-            alt=""
-            onError={() => setHeroOk(false)}
-            style={{
-              width: "100%",
-              height: 160,
-              objectFit: "cover",
-              display: "block",
-              filter: "saturate(1.05)",
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              height: 160,
-              display: "grid",
-              placeItems: "center",
-              background: "linear-gradient(180deg, #222 0%, #111 100%)",
-              color: "rgba(255,255,255,0.85)",
-              padding: 12,
-              textAlign: "center",
-            }}
-          >
-            Hero-Bild nicht gefunden: /public/hero/termine.jpg
-          </div>
-        )}
-
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "linear-gradient(180deg, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.72) 100%)",
-          }}
-        />
-
-        <div style={{ position: "absolute", left: 14, right: 14, bottom: 14 }}>
-          <div style={{ color: "#fff", fontWeight: 900, fontSize: 22, lineHeight: 1.1 }}>
-            Termine
-          </div>
-          <div style={{ color: "rgba(255,255,255,0.92)", fontSize: 13, marginTop: 6 }}>
-            Workouts planen · gemeinsam abstimmen
-          </div>
-        </div>
-      </div>
+      <PageHeader title="Termine" subtitle="Workouts planen · gemeinsam abstimmen" />
 
       {authLoading ? (
         <p className="mt-6 text-gray-600">Prüfe Login…</p>
@@ -311,7 +239,6 @@ export default function TerminePage() {
         </p>
       ) : (
         <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-          {/* Abstimmung (accordion) */}
           <AccordionCard
             icon={<IconVote />}
             title="Abstimmung"
@@ -321,14 +248,12 @@ export default function TerminePage() {
             <PollWidget />
           </AccordionCard>
 
-          {/* Workouts (accordion) */}
           <AccordionCard
             icon={<IconCalendar />}
             title="Kommende Workouts"
             open={openWorkouts}
             onToggle={() => setOpenWorkouts((v) => !v)}
           >
-            {/* Admin: Termin anlegen */}
             {canCreate ? (
               <div
                 style={{
@@ -360,24 +285,12 @@ export default function TerminePage() {
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div className="field">
                       <div className="label">Datum</div>
-                      <input
-                        className="input"
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        required
-                      />
+                      <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
                     </div>
 
                     <div className="field">
                       <div className="label">Uhrzeit</div>
-                      <input
-                        className="input"
-                        type="time"
-                        value={time}
-                        onChange={(e) => setTime(e.target.value)}
-                        required
-                      />
+                      <input className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
                     </div>
 
                     <div className="field">
@@ -411,7 +324,6 @@ export default function TerminePage() {
               </div>
             ) : null}
 
-            {/* Liste: wenn leer -> nichts anzeigen (wie von dir gewünscht) */}
             {loading ? (
               <div className="ui-empty">Lade…</div>
             ) : termine.length === 0 ? null : (
@@ -437,12 +349,7 @@ export default function TerminePage() {
                       </div>
 
                       {isAdmin ? (
-                        <button
-                          className="btn btn-danger btn-sm"
-                          type="button"
-                          onClick={() => onDelete(t.id)}
-                          style={{ flex: "0 0 auto" }}
-                        >
+                        <button className="btn btn-danger btn-sm" type="button" onClick={() => onDelete(t.id)}>
                           Löschen
                         </button>
                       ) : null}
