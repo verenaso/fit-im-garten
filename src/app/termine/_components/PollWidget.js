@@ -497,39 +497,7 @@ export default function PollWidget() {
     );
   }
 
-  if (authLoading) return null;
 
-  return (
-    <div>
-      {/* Header / Status */}
-      <div
-        className="ui-row"
-        style={{
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 10,
-          marginBottom: 12,
-        }}
-      >
-        <div className="ui-row" style={{ gap: 8, flexWrap: "wrap" }}>
-          {poll ? (
-            <>
-              <span
-                className="ui-badge"
-                style={{
-                  background: closed ? "rgba(0,0,0,0.06)" : "rgba(17,17,17,0.10)",
-                  color: "var(--c-darker)",
-                  border: "1px solid rgba(51, 42, 68, 0.14)",
-                }}
-              >
-                {closed ? "geschlossen" : "offen"}
-              </span>
-              <span className="ui-badge">{remainingText()}</span>
-            </>
-          ) : (
-            <span className="ui-badge">keine aktive Abstimmung</span>
-          )}
-        </div>
 
         {isAdmin ? (
           <div className="ui-row" style={{ gap: 8 }}>

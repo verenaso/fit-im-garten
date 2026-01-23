@@ -113,9 +113,7 @@ export default function TerminePage() {
           {/* Abschnitt: Abstimmung */}
           <div className="mt-6 ui-card ui-card-pad-lg">
             <div className="ui-section-title" style={{ marginBottom: 8 }}>
-              Abstimmung
             </div>
-
 
             <PollWidget />
           </div>
@@ -127,9 +125,9 @@ export default function TerminePage() {
             </div>
             <div
               className="ui-muted"
-              style={{ fontSize: 13, marginBottom: 12, color: "var(--c-darker)" }}
+              style={{ fontSize: 16, marginBottom: 12, color: "var(--c-darker)" }}
             >
-              Kommende Workouts und Treffpunkte.
+              
             </div>
 
             {/* Admin: Termin anlegen (nur wenn Admin, ohne Hinweistext) */}
@@ -193,9 +191,6 @@ export default function TerminePage() {
             ) : null}
 
             {/* Liste */}
-            <div className="ui-section-title" style={{ marginBottom: 10 }}>
-              Kommende Termine
-            </div>
 
             {loading ? (
               <div className="ui-empty">Lade…</div>
