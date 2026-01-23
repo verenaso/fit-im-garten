@@ -1,16 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../_components/AuthProvider";
 
-/**
- * WICHTIG:
- * Setze das auf den EXAKTEN Namen aus Supabase → Storage → Buckets
- * Beispiele: "fotos", "images", "fitimgarten"
- */
 const BUCKET = "workout-fotos";
 
+/** timeout helper so UI never hangs forever */
 function withTimeout(promise, ms, label) {
   let t;
   const timeout = new Promise((_, reject) => {
@@ -33,20 +29,41 @@ function fmtDate(iso) {
   }
 }
 
+/**
+ * We support multiple possible column names, because your schema drifted.
+ * We’ll auto-detect which one exists and use it for inserts.
+ */
+const PATH_CANDIDATES = ["path", "file_path", "storage_path", "object_path", "key"];
+
 function pickFilePath(row) {
-  return (
-    row?.file_path ||
-    row?.path ||
-    row?.storage_path ||
-    row?.object_path ||
-    row?.key ||
-    null
-  );
+  if (!row) return null;
+  for (const k of PATH_CANDIDATES) {
+    if (row[k]) return row[k];
+  }
+  return null;
 }
 
-function isMissingColumnError(err) {
-  const msg = (err?.message || "").toLowerCase();
-  return msg.includes("does not exist") && msg.includes("column");
+function detectPathColumn(rows) {
+  // Look at first rows and see which column actually exists
+  for (const r of rows || []) {
+    if (!r || typeof r !== "object") continue;
+    for (const k of PATH_CANDIDATES) {
+      // Column exists if key present (even if null), but we prefer one that has a value
+      if (Object.prototype.hasOwnProperty.call(r, k)) {
+        // Prefer the first key that either has a value, or is at least present
+        if (r[k]) return k;
+      }
+    }
+  }
+  // If none had a value, check presence anyway
+  const first = (rows || [])[0];
+  if (first && typeof first === "object") {
+    for (const k of PATH_CANDIDATES) {
+      if (Object.prototype.hasOwnProperty.call(first, k)) return k;
+    }
+  }
+  // Default guess: "path" (most common)
+  return "path";
 }
 
 export default function FotosPage() {
@@ -58,6 +75,11 @@ export default function FotosPage() {
   const [items, setItems] = useState([]);
   const [caption, setCaption] = useState("");
   const [error, setError] = useState("");
+
+  // We detect which DB column holds the storage path (e.g. "path")
+  const [pathColumn, setPathColumn] = useState("path");
+
+  const pathColumnLabel = useMemo(() => pathColumn || "path", [pathColumn]);
 
   async function loadPhotos() {
     setError("");
@@ -72,11 +94,14 @@ export default function FotosPage() {
       if (e) throw e;
 
       const rows = data || [];
+      setPathColumn(detectPathColumn(rows));
+
       if (rows.length === 0) {
         setItems([]);
         return;
       }
 
+      // Sign first 60 for mobile performance
       const limited = rows.slice(0, 60);
       const paths = limited.map((r) => pickFilePath(r)).filter(Boolean);
 
@@ -111,7 +136,7 @@ export default function FotosPage() {
       setItems([]);
       setError(
         (e?.message || "Fehler beim Laden der Fotos.") +
-          "\n\nHinweis: 'Bucket not found' = BUCKET-Name stimmt nicht oder Bucket existiert nicht."
+          "\n\nHinweis: Falls hier Policies stehen, ist es RLS/Storage. 'Bucket not found' wäre Bucket-Name."
       );
     } finally {
       setLoading(false);
@@ -128,27 +153,6 @@ export default function FotosPage() {
     loadPhotos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id]);
-
-  async function insertPhotoRow(payloadA, payloadB) {
-    const first = await withTimeout(
-      supabase.from("photos").insert(payloadA),
-      12000,
-      "DB: Foto-Row anlegen"
-    );
-
-    if (!first.error) return first;
-
-    if (isMissingColumnError(first.error) && payloadB) {
-      const second = await withTimeout(
-        supabase.from("photos").insert(payloadB),
-        12000,
-        "DB: Foto-Row anlegen (Fallback)"
-      );
-      return second;
-    }
-
-    return first;
-  }
 
   async function onUpload(e) {
     e.preventDefault();
@@ -168,27 +172,29 @@ export default function FotosPage() {
         `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
       const fileName = `${id}.${safeExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      const storagePath = `${user.id}/${fileName}`;
 
+      // 1) Upload to storage
       const { error: upErr } = await withTimeout(
-        supabase.storage.from(BUCKET).upload(filePath, file, { upsert: false }),
+        supabase.storage.from(BUCKET).upload(storagePath, file, { upsert: false }),
         20000,
         "Storage: Upload"
       );
       if (upErr) throw upErr;
 
-      const payloadFilePath = {
+      // 2) Insert DB row using the detected column name
+      const payload = {
         user_id: user.id,
-        file_path: filePath,
         caption: caption.trim() || null,
-      };
-      const payloadPath = {
-        user_id: user.id,
-        path: filePath,
-        caption: caption.trim() || null,
+        [pathColumnLabel]: storagePath,
       };
 
-      const { error: insErr } = await insertPhotoRow(payloadFilePath, payloadPath);
+      const { error: insErr } = await withTimeout(
+        supabase.from("photos").insert(payload),
+        12000,
+        `DB: Insert (Spalte: ${pathColumnLabel})`
+      );
+
       if (insErr) throw insErr;
 
       setCaption("");
@@ -197,7 +203,8 @@ export default function FotosPage() {
     } catch (e) {
       setError(
         (e?.message || "Upload fehlgeschlagen.") +
-          "\n\nWenn hier 'Bucket not found' steht: BUCKET oben anpassen oder Bucket in Supabase anlegen."
+          `\n\nDebug: Wir schreiben den Storage-Pfad in DB-Spalte "${pathColumnLabel}".` +
+          "\nTypisch: RLS blockt INSERT in photos oder Storage Policy blockt Upload."
       );
     } finally {
       setUploading(false);
@@ -218,7 +225,7 @@ export default function FotosPage() {
       );
       if (fe) throw fe;
 
-      const filePath = pickFilePath(data);
+      const storagePath = pickFilePath(data);
 
       const { error: de } = await withTimeout(
         supabase.from("photos").delete().eq("id", photoId),
@@ -227,8 +234,8 @@ export default function FotosPage() {
       );
       if (de) throw de;
 
-      if (filePath) {
-        await supabase.storage.from(BUCKET).remove([filePath]);
+      if (storagePath) {
+        await supabase.storage.from(BUCKET).remove([storagePath]);
       }
 
       await loadPhotos();
@@ -241,7 +248,10 @@ export default function FotosPage() {
     <main className="page">
       <div>
         <h1 className="page-title">Fotos</h1>
-        <div className="page-subtitle">Mobile-first Uploads & Galerie</div>
+        <div className="page-subtitle">
+          Mobile-first Galerie · Bucket: <strong>{BUCKET}</strong> · DB-Pfadspalte:{" "}
+          <strong>{pathColumnLabel}</strong>
+        </div>
       </div>
 
       {authLoading ? (
