@@ -2,6 +2,13 @@ import "./globals.css";
 import Providers from "./_components/Providers";
 import HeaderAuth from "./_components/HeaderAuth";
 import BottomNav from "./_components/BottomNav";
+import { Inter } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
+});
 
 export const metadata = {
   title: "Fit im Garten",
@@ -10,7 +17,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="de">
+    <html lang="de" className={inter.className}>
       <body>
         <Providers>
           <HeaderAuth />
