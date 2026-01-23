@@ -1,19 +1,63 @@
-export default function Home() {
+"use client";
+
+import Link from "next/link";
+import { useAuth } from "./_components/AuthProvider";
+
+export default function HomePage() {
+  const { user, loading } = useAuth();
+
+  // Optional: wenn eingeloggt, kannst du später direkt weiterleiten/anderen Inhalt zeigen.
+  // Für jetzt: nur ausgeloggt relevant.
+  if (loading) return null;
+
+  if (user) {
+    // MVP: wenn eingeloggt, z.B. direkt zu Termine oder Fotos
+    // return <div style={{ padding: 16 }}>Du bist eingeloggt.</div>;
+  }
+
   return (
-    <main className="min-h-screen p-6">
-      <h1 className="text-2xl font-bold">Fit im Garten</h1>
-      <p className="mt-2 text-gray-600">
-        Willkommen! Fit im Garten - jetzt auch digital ;)
+    <div style={{ padding: 20, paddingBottom: 96 }}>
+      <h1 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1.1, margin: 0 }}>
+        Willkommen bei Fit im Garten.
+      </h1>
+
+      <p style={{ marginTop: 14, fontSize: 18, color: "#444", lineHeight: 1.4 }}>
+        Hier geht&apos;s zur Registrierung / zum Login.
       </p>
 
-      <div className="mt-6 space-y-3">
-        <a className="block underline" href="/termine">Termine</a>
-        <a className="block underline" href="/uebungen">Übungsdatenbank</a>
-        <a className="block underline" href="/workouts/neu">Workout erstellen</a>
-        <a className="block underline" href="/workouts">Vergangene Workouts</a>
-        <a className="block underline" href="/fotos">Fotos</a>
+      <div style={{ display: "grid", gap: 10, marginTop: 18 }}>
+        <Link href="/login" style={buttonPrimary}>
+          Registrierung
+        </Link>
+        <Link href="/login" style={buttonSecondary}>
+          Login
+        </Link>
       </div>
-    </main>
+    </div>
   );
 }
 
+const buttonPrimary = {
+  height: 48,
+  borderRadius: 14,
+  background: "#111",
+  color: "#fff",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: 700,
+  textDecoration: "none",
+};
+
+const buttonSecondary = {
+  height: 48,
+  borderRadius: 14,
+  background: "#fff",
+  color: "#111",
+  border: "1px solid #ddd",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: 700,
+  textDecoration: "none",
+};
