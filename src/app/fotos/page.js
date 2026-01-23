@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../_components/AuthProvider";
 
-const BUCKET = "photos";
+/**
+ * WICHTIG:
+ * Setze das auf den EXAKTEN Namen aus Supabase → Storage → Buckets
+ * Beispiele: "fotos", "images", "fitimgarten"
+ */
+const BUCKET = "workout-fotos";
 
 function withTimeout(promise, ms, label) {
   let t;
@@ -72,12 +77,8 @@ export default function FotosPage() {
         return;
       }
 
-      // Sign only first 60 items for mobile performance
       const limited = rows.slice(0, 60);
-
-      const paths = limited
-        .map((r) => pickFilePath(r))
-        .filter(Boolean);
+      const paths = limited.map((r) => pickFilePath(r)).filter(Boolean);
 
       let signedMap = {};
       if (paths.length > 0) {
@@ -110,7 +111,7 @@ export default function FotosPage() {
       setItems([]);
       setError(
         (e?.message || "Fehler beim Laden der Fotos.") +
-          "\n\nHinweis: Prüfe (1) Bucket-Name, (2) Storage Policies, (3) RLS auf photos."
+          "\n\nHinweis: 'Bucket not found' = BUCKET-Name stimmt nicht oder Bucket existiert nicht."
       );
     } finally {
       setLoading(false);
@@ -129,7 +130,6 @@ export default function FotosPage() {
   }, [authLoading, user?.id]);
 
   async function insertPhotoRow(payloadA, payloadB) {
-    // Try first payloadA, then payloadB if missing column error
     const first = await withTimeout(
       supabase.from("photos").insert(payloadA),
       12000,
@@ -177,9 +177,6 @@ export default function FotosPage() {
       );
       if (upErr) throw upErr;
 
-      // Attempt insert using common schemas:
-      // A) file_path
-      // B) path
       const payloadFilePath = {
         user_id: user.id,
         file_path: filePath,
@@ -200,7 +197,7 @@ export default function FotosPage() {
     } catch (e) {
       setError(
         (e?.message || "Upload fehlgeschlagen.") +
-          "\n\nTypisch: Storage Policy blockt Upload oder RLS blockt Insert in photos."
+          "\n\nWenn hier 'Bucket not found' steht: BUCKET oben anpassen oder Bucket in Supabase anlegen."
       );
     } finally {
       setUploading(false);
@@ -244,9 +241,7 @@ export default function FotosPage() {
     <main className="page">
       <div>
         <h1 className="page-title">Fotos</h1>
-        <div className="page-subtitle">
-          Teile Bilder aus dem Training. Mobile-first, schnell & einfach.
-        </div>
+        <div className="page-subtitle">Mobile-first Uploads & Galerie</div>
       </div>
 
       {authLoading ? (
@@ -338,11 +333,7 @@ export default function FotosPage() {
                     </div>
 
                     {isAdmin ? (
-                      <button
-                        className="btn btn-danger btn-full"
-                        onClick={() => onDelete(p.id)}
-                        type="button"
-                      >
+                      <button className="btn btn-danger btn-full" onClick={() => onDelete(p.id)} type="button">
                         Löschen
                       </button>
                     ) : null}
