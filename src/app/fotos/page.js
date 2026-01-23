@@ -6,7 +6,6 @@ import { useAuth } from "../_components/AuthProvider";
 
 const BUCKET = "workout-fotos";
 
-/** timeout helper so UI never hangs forever */
 function withTimeout(promise, ms, label) {
   let t;
   const timeout = new Promise((_, reject) => {
@@ -29,10 +28,6 @@ function fmtDate(iso) {
   }
 }
 
-/**
- * We support multiple possible column names, because your schema drifted.
- * We’ll auto-detect which one exists and use it for inserts.
- */
 const PATH_CANDIDATES = ["path", "file_path", "storage_path", "object_path", "key"];
 
 function pickFilePath(row) {
@@ -44,25 +39,20 @@ function pickFilePath(row) {
 }
 
 function detectPathColumn(rows) {
-  // Look at first rows and see which column actually exists
   for (const r of rows || []) {
     if (!r || typeof r !== "object") continue;
     for (const k of PATH_CANDIDATES) {
-      // Column exists if key present (even if null), but we prefer one that has a value
       if (Object.prototype.hasOwnProperty.call(r, k)) {
-        // Prefer the first key that either has a value, or is at least present
         if (r[k]) return k;
       }
     }
   }
-  // If none had a value, check presence anyway
   const first = (rows || [])[0];
   if (first && typeof first === "object") {
     for (const k of PATH_CANDIDATES) {
       if (Object.prototype.hasOwnProperty.call(first, k)) return k;
     }
   }
-  // Default guess: "path" (most common)
   return "path";
 }
 
@@ -76,9 +66,7 @@ export default function FotosPage() {
   const [caption, setCaption] = useState("");
   const [error, setError] = useState("");
 
-  // We detect which DB column holds the storage path (e.g. "path")
   const [pathColumn, setPathColumn] = useState("path");
-
   const pathColumnLabel = useMemo(() => pathColumn || "path", [pathColumn]);
 
   async function loadPhotos() {
@@ -101,7 +89,6 @@ export default function FotosPage() {
         return;
       }
 
-      // Sign first 60 for mobile performance
       const limited = rows.slice(0, 60);
       const paths = limited.map((r) => pickFilePath(r)).filter(Boolean);
 
@@ -136,7 +123,7 @@ export default function FotosPage() {
       setItems([]);
       setError(
         (e?.message || "Fehler beim Laden der Fotos.") +
-          "\n\nHinweis: Falls hier Policies stehen, ist es RLS/Storage. 'Bucket not found' wäre Bucket-Name."
+          "\n\nHinweis: Falls hier Policies stehen, ist es RLS/Storage."
       );
     } finally {
       setLoading(false);
@@ -182,10 +169,14 @@ export default function FotosPage() {
       );
       if (upErr) throw upErr;
 
-      // 2) Insert DB row using the detected column name
+      // 2) Insert DB row
+      // IMPORTANT: taken_on is NOT NULL in your schema -> must be provided.
+      const nowIso = new Date().toISOString();
+
       const payload = {
         user_id: user.id,
         caption: caption.trim() || null,
+        taken_on: nowIso,
         [pathColumnLabel]: storagePath,
       };
 
@@ -203,8 +194,8 @@ export default function FotosPage() {
     } catch (e) {
       setError(
         (e?.message || "Upload fehlgeschlagen.") +
-          `\n\nDebug: Wir schreiben den Storage-Pfad in DB-Spalte "${pathColumnLabel}".` +
-          "\nTypisch: RLS blockt INSERT in photos oder Storage Policy blockt Upload."
+          `\n\nDebug: DB-Pfadspalte="${pathColumnLabel}", taken_on wird gesetzt.` +
+          "\nWenn jetzt noch Fehler kommen: meist RLS (INSERT) oder Storage-Policy (UPLOAD)."
       );
     } finally {
       setUploading(false);
@@ -249,8 +240,7 @@ export default function FotosPage() {
       <div>
         <h1 className="page-title">Fotos</h1>
         <div className="page-subtitle">
-          Mobile-first Galerie · Bucket: <strong>{BUCKET}</strong> · DB-Pfadspalte:{" "}
-          <strong>{pathColumnLabel}</strong>
+          Bucket: <strong>{BUCKET}</strong> · DB-Pfadspalte: <strong>{pathColumnLabel}</strong>
         </div>
       </div>
 
@@ -279,7 +269,7 @@ export default function FotosPage() {
                   onChange={(e) => setCaption(e.target.value)}
                   placeholder="z.B. Workout am Sonntag 💪"
                 />
-                <div className="help">Wird zusammen mit dem Upload gespeichert.</div>
+                <div className="help">Für MVP setzen wir “taken_on” automatisch auf jetzt.</div>
               </div>
 
               <button className="btn btn-primary btn-full" type="submit" disabled={uploading}>
@@ -338,7 +328,10 @@ export default function FotosPage() {
                     )}
 
                     <div className="stack-sm">
-                      <div className="help">{fmtDate(p.created_at)}</div>
+                      <div className="help">
+                        {p.taken_on ? `Aufgenommen: ${fmtDate(p.taken_on)}` : null}
+                        {p.created_at ? `${p.taken_on ? " · " : ""}Upload: ${fmtDate(p.created_at)}` : null}
+                      </div>
                       {p.caption ? <div>{p.caption}</div> : null}
                     </div>
 
