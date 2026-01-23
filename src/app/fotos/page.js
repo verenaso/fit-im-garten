@@ -394,7 +394,7 @@ export default function FotosPage() {
       >
         <h2 style={{ fontSize: 18, margin: 0, marginBottom: 10 }}>Neues Foto</h2>
 
-        <form on.php onSubmit={handleUpload} style={{ display: "grid", gap: 10 }}>
+         <form onSubmit={handleUpload} style={{ display: "grid", gap: 10 }}>
           <input
             ref={fileRef}
             type="file"
