@@ -62,7 +62,31 @@ function IconPlus() {
   );
 }
 
-function SectionCard({ icon, title, children }) {
+function Chevron({ open }) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      style={{
+        transform: open ? "rotate(180deg)" : "rotate(0deg)",
+        transition: "transform 160ms ease",
+      }}
+    >
+      <path
+        d="M6 9l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function AccordionCard({ icon, title, open, onToggle, children }) {
   return (
     <div
       className="ui-card ui-card-pad-lg"
@@ -70,39 +94,60 @@ function SectionCard({ icon, title, children }) {
         borderRadius: 18,
         border: "1px solid rgba(51, 42, 68, 0.10)",
         background: "#fff",
+        overflow: "hidden",
       }}
     >
-      <div
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          marginBottom: 12,
+          width: "100%",
+          textAlign: "left",
+          border: "none",
+          background: "transparent",
+          padding: 0,
+          cursor: "pointer",
         }}
       >
         <div
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: 12,
-            display: "grid",
-            placeItems: "center",
-            background: "rgba(92, 76, 124, 0.08)",
-            color: "var(--c-darker)",
-            flex: "0 0 auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            justifyContent: "space-between",
           }}
         >
-          {icon}
-        </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 12,
+                display: "grid",
+                placeItems: "center",
+                background: "rgba(92, 76, 124, 0.08)",
+                color: "var(--c-darker)",
+                flex: "0 0 auto",
+              }}
+            >
+              {icon}
+            </div>
 
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 900, fontSize: 16, color: "var(--c-darker)", lineHeight: 1.1 }}>
-            {title}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 900, fontSize: 16, color: "var(--c-darker)", lineHeight: 1.1 }}>
+                {title}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ color: "var(--c-darker)", opacity: 0.9 }}>
+            <Chevron open={open} />
           </div>
         </div>
-      </div>
+      </button>
 
-      {children}
+      {open ? <div style={{ marginTop: 12 }}>{children}</div> : null}
     </div>
   );
 }
@@ -119,6 +164,13 @@ export default function TerminePage() {
   const [time, setTime] = useState("");
   const [location, setLocation] = useState("");
   const [note, setNote] = useState("");
+
+  // Accordion state
+  const [openPoll, setOpenPoll] = useState(true);
+  const [openWorkouts, setOpenWorkouts] = useState(true);
+
+  // Hero image state (damit du sofort merkst, wenn Pfad falsch ist)
+  const [heroOk, setHeroOk] = useState(true);
 
   async function loadTermine() {
     setLoading(true);
@@ -172,6 +224,7 @@ export default function TerminePage() {
     setLocation("");
     setNote("");
     await loadTermine();
+    setOpenWorkouts(true);
   }
 
   async function onDelete(id) {
@@ -201,29 +254,51 @@ export default function TerminePage() {
           background: "#111",
         }}
       >
-        <div
-          style={{
-            height: 150,
-            backgroundImage: `url(/hero/termine.jpg)`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            filter: "saturate(1.05)",
-          }}
-        />
+        {/* echtes img, damit Fehler sichtbar werden */}
+        {heroOk ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/hero/termine.jpg"
+            alt=""
+            onError={() => setHeroOk(false)}
+            style={{
+              width: "100%",
+              height: 160,
+              objectFit: "cover",
+              display: "block",
+              filter: "saturate(1.05)",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              height: 160,
+              display: "grid",
+              placeItems: "center",
+              background: "linear-gradient(180deg, #222 0%, #111 100%)",
+              color: "rgba(255,255,255,0.85)",
+              padding: 12,
+              textAlign: "center",
+            }}
+          >
+            Hero-Bild nicht gefunden: /public/hero/termine.jpg
+          </div>
+        )}
+
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.65) 100%)",
+            background: "linear-gradient(180deg, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.72) 100%)",
           }}
         />
+
         <div style={{ position: "absolute", left: 14, right: 14, bottom: 14 }}>
           <div style={{ color: "#fff", fontWeight: 900, fontSize: 22, lineHeight: 1.1 }}>
             Termine
           </div>
-          <div style={{ color: "rgba(255,255,255,0.9)", fontSize: 13, marginTop: 6 }}>
-            Alles rund um Workouts & Abstimmungen
+          <div style={{ color: "rgba(255,255,255,0.92)", fontSize: 13, marginTop: 6 }}>
+            Workouts planen · gemeinsam abstimmen
           </div>
         </div>
       </div>
@@ -236,18 +311,28 @@ export default function TerminePage() {
         </p>
       ) : (
         <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-          {/* Abstimmung */}
-          <SectionCard icon={<IconVote />} title="Abstimmung">
+          {/* Abstimmung (accordion) */}
+          <AccordionCard
+            icon={<IconVote />}
+            title="Abstimmung"
+            open={openPoll}
+            onToggle={() => setOpenPoll((v) => !v)}
+          >
             <PollWidget />
-          </SectionCard>
+          </AccordionCard>
 
-          {/* Kommende Workouts */}
-          <SectionCard icon={<IconCalendar />} title="Kommende Workouts">
-            {/* Admin: Termin anlegen (als klarer Block) */}
+          {/* Workouts (accordion) */}
+          <AccordionCard
+            icon={<IconCalendar />}
+            title="Kommende Workouts"
+            open={openWorkouts}
+            onToggle={() => setOpenWorkouts((v) => !v)}
+          >
+            {/* Admin: Termin anlegen */}
             {canCreate ? (
               <div
                 style={{
-                  border: "1px dashed rgba(51, 42, 68, 0.20)",
+                  border: "1px dashed rgba(51, 42, 68, 0.22)",
                   borderRadius: 16,
                   padding: 12,
                   marginBottom: 12,
@@ -301,7 +386,7 @@ export default function TerminePage() {
                         className="input"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
-                        placeholder="z.B. Sporthalle"
+                        placeholder="z.B. Park / Garten"
                         required
                       />
                     </div>
@@ -326,7 +411,7 @@ export default function TerminePage() {
               </div>
             ) : null}
 
-            {/* Liste */}
+            {/* Liste: wenn leer -> nichts anzeigen (wie von dir gewünscht) */}
             {loading ? (
               <div className="ui-empty">Lade…</div>
             ) : termine.length === 0 ? null : (
@@ -372,7 +457,7 @@ export default function TerminePage() {
                 ))}
               </div>
             )}
-          </SectionCard>
+          </AccordionCard>
         </div>
       )}
     </main>
