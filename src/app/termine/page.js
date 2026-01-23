@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../_components/AuthProvider";
 import PollWidget from "./_components/PollWidget";
-import PageHeader from "../_components/PageHeader";
 
 function fmtDateTime(isoString) {
   const d = new Date(isoString);
@@ -53,12 +52,7 @@ function IconCalendar() {
 function IconPlus() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -229,14 +223,10 @@ export default function TerminePage() {
 
   return (
     <main className="min-h-screen" style={{ paddingBottom: 96 }}>
-      <PageHeader title="Termine" subtitle="Workouts planen · gemeinsam abstimmen" />
-
       {authLoading ? (
         <p className="mt-6 text-gray-600">Prüfe Login…</p>
       ) : !user ? (
-        <p className="mt-6 text-gray-700">
-          Du bist nicht eingeloggt. Bitte logge dich ein, um Termine zu sehen.
-        </p>
+        <p className="mt-6 text-gray-700">Bitte einloggen, um Termine zu sehen.</p>
       ) : (
         <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
           <AccordionCard

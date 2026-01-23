@@ -75,9 +75,7 @@ export default function UebungenPage() {
   }
 
   return (
-    <main className="min-h-screen">
-      <h1 className="text-2xl font-bold">Übungsdatenbank</h1>
-
+    <main className="min-h-screen" style={{ paddingBottom: 96 }}>
       {authLoading ? (
         <p className="mt-6 text-gray-600">Prüfe Login…</p>
       ) : !user ? (
@@ -86,10 +84,6 @@ export default function UebungenPage() {
         </p>
       ) : (
         <>
-          <p className="mt-2 text-gray-600">
-            Eingeloggt {isAdmin ? "(Admin)" : "(Mitglied)"}
-          </p>
-
           {canCreate ? (
             <form onSubmit={onCreate} className="mt-6 rounded-xl border p-4 space-y-3">
               <div className="font-semibold">Neue Übung anlegen</div>

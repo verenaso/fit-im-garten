@@ -132,9 +132,7 @@ export default function WorkoutNeuPage() {
   }
 
   return (
-    <main className="min-h-screen">
-      <h1 className="text-2xl font-bold">Workout erstellen</h1>
-
+    <main className="min-h-screen" style={{ paddingBottom: 96 }}>
       {authLoading ? (
         <p className="mt-6 text-slate-600">Prüfe Login…</p>
       ) : !user ? (
@@ -143,10 +141,6 @@ export default function WorkoutNeuPage() {
         <p className="mt-6 text-slate-600">Lade Übungen…</p>
       ) : (
         <>
-          <p className="mt-2 text-slate-600">
-            Eingeloggt {isAdmin ? "(Admin)" : "(Mitglied)"}
-          </p>
-
           {!canCreate ? <p className="mt-6 text-slate-600">Nur Admins können Workouts erstellen.</p> : null}
 
           <form onSubmit={onSave} className="mt-6 rounded-xl border p-4 space-y-4">
