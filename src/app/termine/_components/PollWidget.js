@@ -40,6 +40,14 @@ function toISOFromDatetimeLocal(value) {
   return d.toISOString();
 }
 
+function setsEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.size !== b.size) return false;
+  for (const x of a) if (!b.has(x)) return false;
+  return true;
+}
+
 export default function PollWidget() {
   const { user, role, loading: authLoading } = useAuth();
   const isAdmin = role === "admin";
@@ -49,6 +57,7 @@ export default function PollWidget() {
   const [options, setOptions] = useState([]);
   const [counts, setCounts] = useState({});
   const [myVotes, setMyVotes] = useState(new Set());
+  const [savedVotes, setSavedVotes] = useState(new Set()); // <- für Dirty-Check
   const [namesByOption, setNamesByOption] = useState({});
   const [error, setError] = useState("");
 
@@ -76,6 +85,7 @@ export default function PollWidget() {
   }
 
   const closed = isPollClosed(poll);
+  const isDirty = !!user?.id && !closed && !setsEqual(myVotes, savedVotes);
 
   async function getNameMapForUserIds(userIds) {
     const ids = uniq((userIds || []).filter(Boolean).map((x) => String(x)));
@@ -137,6 +147,7 @@ export default function PollWidget() {
         setOptions([]);
         setCounts({});
         setMyVotes(new Set());
+        setSavedVotes(new Set());
         setNamesByOption({});
         return;
       }
@@ -200,9 +211,13 @@ export default function PollWidget() {
           .eq("user_id", user.id);
 
         if (myVoteErr) throw myVoteErr;
-        setMyVotes(new Set((myVoteRows || []).map((r) => r.option_id)));
+
+        const set = new Set((myVoteRows || []).map((r) => r.option_id));
+        setMyVotes(set);
+        setSavedVotes(new Set(set)); // <- Snapshot für Dirty-Check
       } else {
         setMyVotes(new Set());
+        setSavedVotes(new Set());
       }
     } catch (e) {
       setError(e?.message || "Fehler beim Laden der Abstimmung.");
@@ -245,6 +260,7 @@ export default function PollWidget() {
 
   async function saveVotes() {
     if (!poll || !user?.id || closed) return;
+    if (!isDirty) return;
 
     setError("");
     setLoading(true);
@@ -308,6 +324,7 @@ export default function PollWidget() {
       if (delErr) throw delErr;
 
       setMyVotes(new Set());
+      setSavedVotes(new Set());
       await loadActivePoll();
     } catch (e) {
       setError(e?.message || "Fehler beim Zurücksetzen.");
@@ -337,7 +354,11 @@ export default function PollWidget() {
     setDraftClosesAt(p.closes_at ? toLocalDatetimeInputValue(p.closes_at) : "");
 
     const mapped = (options || []).map((o) => ({ key: o.id, label: o.label }));
-    setDraftOptions(mapped.length >= 2 ? mapped : [{ key: uid(), label: "" }, { key: uid(), label: "" }]);
+    setDraftOptions(
+      mapped.length >= 2
+        ? mapped
+        : [{ key: uid(), label: "" }, { key: uid(), label: "" }]
+    );
 
     setAdminOpen(true);
   }
@@ -481,7 +502,15 @@ export default function PollWidget() {
   return (
     <div>
       {/* Header / Status */}
-      <div className="ui-row" style={{ justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 12 }}>
+      <div
+        className="ui-row"
+        style={{
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 12,
+        }}
+      >
         <div className="ui-row" style={{ gap: 8, flexWrap: "wrap" }}>
           {poll ? (
             <>
@@ -553,12 +582,6 @@ export default function PollWidget() {
                 Ende: {new Date(poll.closes_at).toLocaleString("de-DE")}
               </div>
             ) : null}
-
-            {!closed && user?.id ? (
-              <div className="ui-muted" style={{ fontSize: 12, marginTop: 8, color: "var(--c-darker)" }}>
-                Tipp: Du kannst deine Auswahl jederzeit ändern und erneut speichern.
-              </div>
-            ) : null}
           </div>
 
           {/* Options as clear click targets */}
@@ -579,10 +602,10 @@ export default function PollWidget() {
                     padding: "12px 12px",
                     borderRadius: 14,
                     border: checked
-                      ? "2px solid rgba(17,17,17,0.9)"
+                      ? "2px solid rgba(17,17,17,0.85)"
                       : "1px solid rgba(51, 42, 68, 0.18)",
-                    background: checked ? "rgba(17,17,17,0.92)" : "rgba(92, 76, 124, 0.06)",
-                    color: checked ? "#fff" : "var(--c-darker)",
+                    background: checked ? "rgba(17,17,17,0.06)" : "rgba(92, 76, 124, 0.06)",
+                    color: "var(--c-darker)",
                     cursor: !user?.id || closed ? "not-allowed" : "pointer",
                     opacity: !user?.id || closed ? 0.75 : 1,
                     boxShadow: checked ? "0 1px 0 rgba(0,0,0,0.06)" : "none",
@@ -590,15 +613,22 @@ export default function PollWidget() {
                   }}
                 >
                   <div style={{ display: "grid", gap: 6 }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        gap: 10,
+                      }}
+                    >
                       <div style={{ fontWeight: 900, fontSize: 15, lineHeight: 1.2 }}>{o.label}</div>
                       <span
                         className="ui-badge"
                         style={{
                           minWidth: 44,
                           justifyContent: "center",
-                          background: checked ? "rgba(255,255,255,0.16)" : "rgba(0,0,0,0.06)",
-                          color: checked ? "#fff" : "var(--c-darker)",
+                          background: checked ? "rgba(17,17,17,0.10)" : "rgba(0,0,0,0.06)",
+                          color: "var(--c-darker)",
                           border: "1px solid rgba(51, 42, 68, 0.14)",
                         }}
                       >
@@ -606,7 +636,7 @@ export default function PollWidget() {
                       </span>
                     </div>
 
-                    <div style={{ fontSize: 12, opacity: checked ? 0.9 : 0.85 }}>
+                    <div style={{ fontSize: 12, opacity: 0.85 }}>
                       {voteCount} Stimme{voteCount === 1 ? "" : "n"}
                     </div>
 
@@ -627,7 +657,13 @@ export default function PollWidget() {
               <button type="button" className="btn btn-ghost btn-sm" onClick={resetMyVotes} disabled={loading}>
                 Zurücksetzen
               </button>
-              <button type="button" className="btn btn-primary btn-sm" onClick={saveVotes} disabled={loading}>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={saveVotes}
+                disabled={loading || !isDirty}
+                title={!isDirty ? "Keine Änderungen" : ""}
+              >
                 Stimme speichern
               </button>
             </div>
@@ -635,7 +671,7 @@ export default function PollWidget() {
         </>
       )}
 
-      {/* Admin editor (unchanged logic, but inside a clean divider) */}
+      {/* Admin editor */}
       {isAdmin && adminOpen ? (
         <div style={{ marginTop: 16, borderTop: "1px solid rgba(51, 42, 68, 0.12)", paddingTop: 14 }}>
           <div className="ui-section-title" style={{ marginBottom: 10 }}>
