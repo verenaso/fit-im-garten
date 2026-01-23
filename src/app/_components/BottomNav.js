@@ -42,12 +42,7 @@ function NavItem({ href, label, icon }) {
 function IconCalendar() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M7 3v3M17 3v3M4.5 8.5h15"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+      <path d="M7 3v3M17 3v3M4.5 8.5h15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       <path
         d="M6.5 21h11A3 3 0 0 0 20.5 18V8A3 3 0 0 0 17.5 5h-11A3 3 0 0 0 3.5 8v10A3 3 0 0 0 6.5 21Z"
         stroke="currentColor"
@@ -61,18 +56,8 @@ function IconCalendar() {
 function IconDumbbell() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M7 10v4M17 10v4M5 9v6M19 9v6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M8.5 12h7"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+      <path d="M7 10v4M17 10v4M5 9v6M19 9v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M8.5 12h7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -80,12 +65,7 @@ function IconDumbbell() {
 function IconPlus() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -93,26 +73,9 @@ function IconPlus() {
 function IconHistory() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M3 12a9 9 0 1 0 3-6.7"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M3 4v4h4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 7v6l4 2"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M3 12a9 9 0 1 0 3-6.7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M3 4v4h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 7v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -126,12 +89,7 @@ function IconPhoto() {
         strokeWidth="1.8"
         strokeLinejoin="round"
       />
-      <path
-        d="M8 11.5a2 2 0 1 0 0-.01"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+      <path d="M8 11.5a2 2 0 1 0 0-.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       <path
         d="M21 16l-5.2-5.2a1.6 1.6 0 0 0-2.3 0L6 18"
         stroke="currentColor"
@@ -157,18 +115,13 @@ export default function BottomNav() {
         borderTop: "1px solid rgba(51, 42, 68, 0.12)",
       }}
     >
-      <div
-        style={{
-          maxWidth: 720,
-          margin: "0 auto",
-          display: "flex",
-          paddingBottom: "env(safe-area-inset-bottom)",
-        }}
-      >
+      <div style={{ maxWidth: 720, margin: "0 auto", display: "flex", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <NavItem href="/termine" label="Termine" icon={<IconCalendar />} />
         <NavItem href="/uebungen" label="Übungen" icon={<IconDumbbell />} />
-        <NavItem href="/neu" label="Neu" icon={<IconPlus />} />
-        <NavItem href="/historie" label="Historie" icon={<IconHistory />} />
+        {/* ✅ Neu -> /uebungen */}
+        <NavItem href="/uebungen" label="Neu" icon={<IconPlus />} />
+        {/* ✅ Historie -> /workouts */}
+        <NavItem href="/workouts" label="Historie" icon={<IconHistory />} />
         <NavItem href="/fotos" label="Fotos" icon={<IconPhoto />} />
       </div>
     </nav>
