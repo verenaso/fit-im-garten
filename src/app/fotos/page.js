@@ -10,23 +10,20 @@ import { useAuth } from "../_components/AuthProvider";
  * - Holt Signed URLs für die Storage-Paths
  * - Upload: Storage upload -> DB insert (taken_on NOT NULL)
  *
- * Annahmen:
- * - AuthProvider exportiert useAuth() mit { user, role, loading }
- * - Bucket: workout-fotos
- * - DB table: photos(id, user_id, path, caption, taken_on NOT NULL, created_at)
+ * Spalten: photos.storage_path (statt path)
  */
 
 export default function FotosPage() {
   const { user, role, loading: authLoading } = useAuth();
 
-  const [items, setItems] = useState([]); // { id, path, caption, taken_on, created_at, url }
+  const [items, setItems] = useState([]); // { id, storage_path, caption, taken_on, created_at, url }
   const [pageLoading, setPageLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
   const [caption, setCaption] = useState("");
-  const [takenOn, setTakenOn] = useState(""); // optional, ISO-date string "YYYY-MM-DD" vom Input
+  const [takenOn, setTakenOn] = useState(""); // "YYYY-MM-DD" optional
   const fileRef = useRef(null);
 
   const bucketName = "workout-fotos";
@@ -50,10 +47,9 @@ export default function FotosPage() {
     setPageLoading(true);
 
     try {
-      // Admin darf (per RLS) ggf. alle sehen, Member typischerweise nur eigene.
       const { data, error: dbErr } = await supabase
         .from("photos")
-        .select("id, user_id, path, caption, taken_on, created_at")
+        .select("id, user_id, storage_path, caption, taken_on, created_at")
         .order("taken_on", { ascending: false })
         .limit(200);
 
@@ -61,14 +57,14 @@ export default function FotosPage() {
 
       const rows = data || [];
 
-      // Signed URLs parallel holen (stabil: pro Path 1 request; bei vielen Bildern kann man später optimieren)
       const withUrls = await Promise.all(
         rows.map(async (row) => {
+          const path = row.storage_path;
+
           const { data: signed, error: signedErr } = await supabase.storage
             .from(bucketName)
-            .createSignedUrl(row.path, 60 * 60); // 1h
+            .createSignedUrl(path, 60 * 60); // 1h
 
-          // Wenn SignedUrl fehlschlägt, lassen wir url leer, aber crashen nicht
           if (signedErr) {
             return { ...row, url: "" };
           }
@@ -100,31 +96,26 @@ export default function FotosPage() {
       return;
     }
 
-    // Basic Guardrails (MVP)
     if (!file.type?.startsWith("image/")) {
       setError("Bitte wähle eine Bilddatei aus (z.B. JPG/PNG).");
       return;
     }
 
-    // taken_on ist NOT NULL: MVP default = heute
-    // Wenn User ein Datum auswählt, speichern wir es als ISO (mit Uhrzeit 00:00:00Z)
     const takenOnIso = takenOn
       ? new Date(`${takenOn}T00:00:00.000Z`).toISOString()
       : new Date().toISOString();
 
     setUploading(true);
 
-    // Wir machen: 1) Storage upload  2) DB insert
-    // Wenn DB insert failt, löschen wir das Storage-Objekt wieder (Cleanup).
     const fileExt = getFileExtension(file.name) || "jpg";
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    const path = `${user.id}/${fileName}`;
+    const storagePath = `${user.id}/${fileName}`;
 
     try {
       // 1) Storage Upload
       const { error: storageErr } = await supabase.storage
         .from(bucketName)
-        .upload(path, file, {
+        .upload(storagePath, file, {
           cacheControl: "3600",
           upsert: false,
           contentType: file.type || "image/jpeg",
@@ -132,34 +123,32 @@ export default function FotosPage() {
 
       if (storageErr) throw storageErr;
 
-      // 2) DB Insert
+      // 2) DB Insert (storage_path!)
       const { data: inserted, error: insertErr } = await supabase
         .from("photos")
         .insert([
           {
             user_id: user.id,
-            path,
+            storage_path: storagePath,
             caption: caption?.trim() ? caption.trim() : null,
             taken_on: takenOnIso,
           },
         ])
-        .select("id, user_id, path, caption, taken_on, created_at")
+        .select("id, user_id, storage_path, caption, taken_on, created_at")
         .single();
 
       if (insertErr) {
         // Cleanup (best effort)
-        await supabase.storage.from(bucketName).remove([path]);
+        await supabase.storage.from(bucketName).remove([storagePath]);
         throw insertErr;
       }
 
-      // Signed URL für sofortige Anzeige holen
+      // Signed URL für sofortige Anzeige
       const { data: signed } = await supabase.storage
         .from(bucketName)
-        .createSignedUrl(path, 60 * 60);
+        .createSignedUrl(storagePath, 60 * 60);
 
       const newItem = { ...inserted, url: signed?.signedUrl || "" };
-
-      // UI Update: oben einfügen
       setItems((prev) => [newItem, ...prev]);
 
       // Reset Form
@@ -323,9 +312,7 @@ export default function FotosPage() {
       {pageLoading ? (
         <div style={{ marginTop: 12, color: "#666" }}>Lade Fotos…</div>
       ) : items.length === 0 ? (
-        <div style={{ marginTop: 12, color: "#666" }}>
-          Noch keine Fotos vorhanden.
-        </div>
+        <div style={{ marginTop: 12, color: "#666" }}>Noch keine Fotos vorhanden.</div>
       ) : (
         <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
           {items.map((it) => (
@@ -358,14 +345,14 @@ export default function FotosPage() {
                 <div style={{ fontWeight: 650, marginBottom: 4 }}>
                   {formatDate(it.taken_on)}
                 </div>
-                {it.caption ? (
-                  <div style={{ color: "#333" }}>{it.caption}</div>
-                ) : (
-                  <div style={{ color: "#777" }}>—</div>
-                )}
+                {it.caption ? <div style={{ color: "#333" }}>{it.caption}</div> : <div style={{ color: "#777" }}>—</div>}
 
                 <div style={{ marginTop: 8, fontSize: 12, color: "#777" }}>
                   {it.created_at ? `Upload: ${formatDateTime(it.created_at)}` : ""}
+                </div>
+
+                <div style={{ marginTop: 6, fontSize: 12, color: "#999", wordBreak: "break-all" }}>
+                  {it.storage_path}
                 </div>
               </div>
             </div>
@@ -374,7 +361,7 @@ export default function FotosPage() {
       )}
 
       <div style={{ marginTop: 20, fontSize: 12, color: "#777" }}>
-        Hinweis: Wenn Upload/Anzeige trotz Code scheitert, ist es fast immer eine RLS/Storage Policy.
+        Hinweis: Wenn Upload/Anzeige danach noch scheitert, ist es fast immer eine RLS/Storage Policy.
       </div>
     </div>
   );
@@ -413,7 +400,6 @@ function formatDateTime(iso) {
 }
 
 function normalizeSupabaseError(e) {
-  // Supabase Errors sind oft { message, details, hint, code }
   if (!e) return "Unbekannter Fehler.";
   if (typeof e === "string") return e;
 
