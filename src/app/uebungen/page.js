@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/app/_components/AuthProvider";
 import CollapsibleSection from "@/app/_components/CollapsibleSection";
 
+
 function IconPlus() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
