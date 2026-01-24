@@ -3,9 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+function isActive(pathname, href) {
+  if (!pathname) return false;
+  if (pathname === href) return true;
+
+  // ✅ Special-case: /workouts soll NICHT aktiv sein bei /workouts/neu
+  if (href === "/workouts" && pathname.startsWith("/workouts/neu")) return false;
+
+  return href !== "/" && pathname.startsWith(href + "/");
+}
+
 function NavItem({ href, label, icon }) {
   const pathname = usePathname();
-  const active = pathname === href || (href !== "/" && pathname?.startsWith(href));
+  const active = isActive(pathname, href);
 
   return (
     <Link
