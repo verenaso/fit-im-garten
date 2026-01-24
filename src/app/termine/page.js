@@ -149,8 +149,9 @@ export default function TerminePage() {
   const [location, setLocation] = useState("");
   const [note, setNote] = useState("");
 
-  const [openPoll, setOpenPoll] = useState(true);
-  const [openWorkouts, setOpenWorkouts] = useState(true);
+  // ✅ default eingeklappt
+  const [openPoll, setOpenPoll] = useState(false);
+  const [openWorkouts, setOpenWorkouts] = useState(false);
 
   async function loadTermine() {
     setLoading(true);
@@ -204,6 +205,8 @@ export default function TerminePage() {
     setLocation("");
     setNote("");
     await loadTermine();
+
+    // Wenn Admin einen Termin anlegt: Workouts automatisch aufklappen
     setOpenWorkouts(true);
   }
 

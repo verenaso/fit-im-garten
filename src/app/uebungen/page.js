@@ -3,6 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/app/_components/AuthProvider";
+import CollapsibleSection from "@/app/_components/CollapsibleSection";
+
+function IconPlus() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function UebungenPage() {
   const { user, role, loading: authLoading } = useAuth();
@@ -79,79 +88,85 @@ export default function UebungenPage() {
       {authLoading ? (
         <p className="mt-6 text-gray-600">Prüfe Login…</p>
       ) : !user ? (
-        <p className="mt-6 text-gray-700">
-          Du bist nicht eingeloggt. Bitte logge dich ein, um Übungen zu sehen.
-        </p>
+        <p className="mt-6 text-gray-700">Du bist nicht eingeloggt. Bitte logge dich ein, um Übungen zu sehen.</p>
       ) : (
         <>
           {canCreate ? (
-            <form onSubmit={onCreate} className="mt-6 rounded-xl border p-4 space-y-3">
-              <div className="font-semibold">Neue Übung anlegen</div>
+            <div style={{ marginTop: 14 }}>
+              <CollapsibleSection title="Neue Übung" icon={<IconPlus />} defaultOpen={false}>
+                <form onSubmit={onCreate} className="ui-col" style={{ gap: 12 }}>
+                  <label className="field">
+                    <div className="label">Name</div>
+                    <input
+                      className="input"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="z.B. Kniebeuge"
+                      required
+                    />
+                  </label>
 
-              <label className="space-y-1 block">
-                <div className="text-sm text-gray-700">Name</div>
-                <input
-                  className="w-full rounded-lg border p-2"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="z.B. Kniebeuge"
-                  required
-                />
-              </label>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="field">
+                      <div className="label">Kategorie (optional)</div>
+                      <input
+                        className="input"
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        placeholder="z.B. Beine, Core, Mobility…"
+                      />
+                    </label>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="space-y-1">
-                  <div className="text-sm text-gray-700">Kategorie (optional)</div>
-                  <input
-                    className="w-full rounded-lg border p-2"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    placeholder="z.B. Beine, Core, Mobility…"
-                  />
-                </label>
+                    <label className="field">
+                      <div className="label">Link (optional)</div>
+                      <input
+                        className="input"
+                        value={link}
+                        onChange={(e) => setLink(e.target.value)}
+                        placeholder="z.B. YouTube / Anleitung"
+                      />
+                    </label>
+                  </div>
 
-                <label className="space-y-1">
-                  <div className="text-sm text-gray-700">Link (optional)</div>
-                  <input
-                    className="w-full rounded-lg border p-2"
-                    value={link}
-                    onChange={(e) => setLink(e.target.value)}
-                    placeholder="z.B. YouTube / Anleitung"
-                  />
-                </label>
-              </div>
+                  <label className="field">
+                    <div className="label">Beschreibung (optional)</div>
+                    <textarea
+                      className="textarea"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Kurzbeschreibung, Technik-Hinweise…"
+                      rows={3}
+                    />
+                  </label>
 
-              <label className="space-y-1 block">
-                <div className="text-sm text-gray-700">Beschreibung (optional)</div>
-                <textarea
-                  className="w-full rounded-lg border p-2"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Kurzbeschreibung, Technik-Hinweise…"
-                  rows={3}
-                />
-              </label>
+                  <div className="ui-row" style={{ justifyContent: "flex-end" }}>
+                    <button className="btn btn-primary btn-sm" type="submit">
+                      Übung speichern
+                    </button>
+                  </div>
+                </form>
+              </CollapsibleSection>
+            </div>
+          ) : null}
 
-              <button className="rounded-lg border px-4 py-2">Übung speichern</button>
-            </form>
-          ) : (
-            <p className="mt-6 text-gray-600">Nur Admins können Übungen anlegen oder löschen.</p>
-          )}
-
-          <div className="mt-6">
-            <div className="font-semibold">Alle Übungen</div>
+          <div style={{ marginTop: 14 }}>
+            <div className="ui-section-title" style={{ marginBottom: 10 }}>
+              Übungen
+            </div>
 
             {loading ? (
-              <p className="mt-3 text-gray-600">Lade…</p>
+              <div className="ui-empty">Lade…</div>
             ) : exercises.length === 0 ? (
-              <p className="mt-3 text-gray-600">Noch keine Übungen angelegt.</p>
+              <div className="ui-empty">Noch keine Übungen angelegt.</div>
             ) : (
-              <div className="mt-3 space-y-3">
+              <div className="ui-list">
                 {exercises.map((ex) => (
-                  <div key={ex.id} className="rounded-xl border p-4">
-                    <div className="font-semibold">{ex.name}</div>
-                    {ex.category ? <div className="text-gray-700">{ex.category}</div> : null}
-                    {ex.description ? <div className="mt-2 text-gray-600">{ex.description}</div> : null}
+                  <div key={ex.id} className="ui-card ui-card-pad">
+                    <div style={{ fontWeight: 900, color: "var(--c-darker)" }}>{ex.name}</div>
+                    {ex.category ? <div className="ui-muted" style={{ color: "var(--c-darker)" }}>{ex.category}</div> : null}
+                    {ex.description ? (
+                      <div style={{ marginTop: 8, color: "var(--c-darker)", opacity: 0.9 }}>{ex.description}</div>
+                    ) : null}
                     {ex.link ? (
                       <a className="mt-2 block underline" href={ex.link} target="_blank" rel="noreferrer">
                         Link öffnen
@@ -159,9 +174,11 @@ export default function UebungenPage() {
                     ) : null}
 
                     {isAdmin ? (
-                      <button className="mt-3 underline text-sm" onClick={() => onDelete(ex.id)}>
-                        Löschen
-                      </button>
+                      <div className="ui-row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
+                        <button className="btn btn-danger btn-sm" type="button" onClick={() => onDelete(ex.id)}>
+                          Löschen
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                 ))}

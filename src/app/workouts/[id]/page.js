@@ -30,8 +30,42 @@ function IconBack() {
   );
 }
 
+function IconTrash() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 7h16"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M10 11v7M14 11v7"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6.5 7l1-2h9l1 2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 7l.8 14h8.4L17 7"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function WorkoutDetailPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
+  const isAdmin = role === "admin";
+
   const params = useParams();
   const router = useRouter();
 
@@ -41,6 +75,7 @@ export default function WorkoutDetailPage() {
   }, [params]);
 
   const [loading, setLoading] = useState(true);
+  const [busyDelete, setBusyDelete] = useState(false);
   const [error, setError] = useState("");
 
   const [workout, setWorkout] = useState(null);
@@ -61,12 +96,14 @@ export default function WorkoutDetailPage() {
         .maybeSingle();
 
       if (wErr) throw wErr;
+
       if (!w) {
         setWorkout(null);
         setItems([]);
         setExerciseNameById({});
         return;
       }
+
       setWorkout(w);
 
       const { data: its, error: iErr } = await supabase
@@ -104,6 +141,41 @@ export default function WorkoutDetailPage() {
     }
   }
 
+  async function handleDelete() {
+    if (!isAdmin) return;
+    if (!workoutId) return;
+
+    const ok = confirm("Workout wirklich löschen? (Diese Aktion kann nicht rückgängig gemacht werden.)");
+    if (!ok) return;
+
+    setBusyDelete(true);
+    setError("");
+
+    try {
+      // 1) Items löschen (falls kein FK-CASCADE)
+      const { error: delItemsErr } = await supabase
+        .from("workout_items")
+        .delete()
+        .eq("workout_id", workoutId);
+
+      if (delItemsErr) throw delItemsErr;
+
+      // 2) Workout löschen
+      const { error: delWorkoutErr } = await supabase
+        .from("workouts")
+        .delete()
+        .eq("id", workoutId);
+
+      if (delWorkoutErr) throw delWorkoutErr;
+
+      router.push("/workouts");
+    } catch (e) {
+      setError(e?.message || "Konnte Workout nicht löschen.");
+    } finally {
+      setBusyDelete(false);
+    }
+  }
+
   useEffect(() => {
     if (authLoading) return;
     if (!user?.id) return;
@@ -119,7 +191,7 @@ export default function WorkoutDetailPage() {
         <p className="mt-6 text-gray-700">Bitte einloggen.</p>
       ) : (
         <>
-          <div style={{ marginTop: 14 }}>
+          <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
             <button
               type="button"
               className="btn btn-ghost btn-sm"
@@ -128,6 +200,19 @@ export default function WorkoutDetailPage() {
             >
               <IconBack /> Zurück
             </button>
+
+            {isAdmin ? (
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                onClick={handleDelete}
+                disabled={busyDelete || loading}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+                title="Workout löschen"
+              >
+                <IconTrash /> {busyDelete ? "Lösche…" : "Löschen"}
+              </button>
+            ) : null}
           </div>
 
           {error ? (

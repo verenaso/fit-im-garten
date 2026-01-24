@@ -31,25 +31,9 @@ function Chevron({ open }) {
 function IconUpload() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 16V6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M8 9l4-4 4 4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M5 18a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
+      <path d="M12 16V6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M8 9l4-4 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 18a3 3 0 0 0 3 3h8a3 3 0 0 0 3-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -141,7 +125,8 @@ function fileUuid() {
 export default function FotosPage() {
   const { user, loading: authLoading } = useAuth();
 
-  const [openUpload, setOpenUpload] = useState(true);
+  // ✅ Upload default eingeklappt
+  const [openUpload, setOpenUpload] = useState(false);
   const [openGallery, setOpenGallery] = useState(true);
 
   const [busy, setBusy] = useState(false);
@@ -176,14 +161,13 @@ export default function FotosPage() {
 
     setPhotos(data || []);
 
-    // Signed URLs holen
     const nextUrls = {};
     for (const p of data || []) {
       if (!p.storage_path) continue;
 
       const { data: signed, error: se } = await supabase.storage
         .from("workout-fotos")
-        .createSignedUrl(p.storage_path, 60 * 60); // 1h
+        .createSignedUrl(p.storage_path, 60 * 60);
 
       if (!se && signed?.signedUrl) {
         nextUrls[p.id] = signed.signedUrl;
@@ -195,8 +179,6 @@ export default function FotosPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user?.id) return;
-
-    // ✅ wichtig: NICHT von role abhängig machen!
     loadPhotos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id]);
@@ -218,13 +200,11 @@ export default function FotosPage() {
       const filename = `${fileUuid()}.${ext}`;
       const storagePath = `${user.id}/${filename}`;
 
-      const { error: upErr } = await supabase.storage
-        .from("workout-fotos")
-        .upload(storagePath, selectedFile, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: selectedFile.type || "image/jpeg",
-        });
+      const { error: upErr } = await supabase.storage.from("workout-fotos").upload(storagePath, selectedFile, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: selectedFile.type || "image/jpeg",
+      });
 
       if (upErr) throw upErr;
 
@@ -234,7 +214,7 @@ export default function FotosPage() {
         user_id: user.id,
         storage_path: storagePath,
         caption: caption.trim() || null,
-        taken_on: nowIso, // MVP
+        taken_on: nowIso,
       });
 
       if (dbErr) throw dbErr;
@@ -273,7 +253,6 @@ export default function FotosPage() {
             ) : null}
 
             <form onSubmit={handleUpload} className="ui-col">
-              {/* Hidden input */}
               <input
                 ref={fileRef}
                 type="file"
@@ -282,7 +261,6 @@ export default function FotosPage() {
                 onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
               />
 
-              {/* ✅ Upload-Item statt nativer Datei-UI */}
               <button
                 type="button"
                 className="ui-card ui-card-pad"
@@ -313,9 +291,7 @@ export default function FotosPage() {
                   </div>
 
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 900, color: "var(--c-darker)" }}>
-                      Foto auswählen
-                    </div>
+                    <div style={{ fontWeight: 900, color: "var(--c-darker)" }}>Foto auswählen</div>
                     <div className="ui-muted" style={{ marginTop: 2 }}>
                       {selectedFile ? selectedFile.name : "Tippe hier, um ein Bild auszuwählen"}
                     </div>
@@ -373,7 +349,6 @@ export default function FotosPage() {
                         <div className="ui-empty">Bild lädt…</div>
                       )}
 
-                      {/* ✅ Unter dem Foto: minimal, wie du es willst */}
                       <div style={{ marginTop: 10, color: "var(--c-darker)", opacity: 0.9, fontSize: 13 }}>
                         hochgeladen am {uploadedAt}
                       </div>
