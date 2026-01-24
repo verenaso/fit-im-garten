@@ -1,15 +1,33 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import { useAuth } from "@/app/_components/AuthProvider";
-import CollapsibleSection from "@/app/_components/CollapsibleSection";
-
+import { supabase } from "../../lib/supabaseClient";
+import { useAuth } from "../_components/AuthProvider";
+import CollapsibleSection from "../_components/CollapsibleSection";
 
 function IconPlus() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconList() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M8 6h13M8 12h13M8 18h13"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -20,6 +38,10 @@ export default function UebungenPage() {
 
   const [loading, setLoading] = useState(true);
   const [exercises, setExercises] = useState([]);
+
+  // Sections
+  const [openCreate, setOpenCreate] = useState(false); // ✅ default eingeklappt
+  const [openList, setOpenList] = useState(true);
 
   // Formular
   const [name, setName] = useState("");
@@ -46,7 +68,8 @@ export default function UebungenPage() {
       return;
     }
     loadExercises();
-  }, [authLoading, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
 
   const canCreate = useMemo(() => isAdmin, [isAdmin]);
 
@@ -61,7 +84,7 @@ export default function UebungenPage() {
     });
 
     if (error) {
-      alert("Konnte Übung nicht speichern (bist du Admin?).\n\n" + error.message);
+      alert("Konnte Übung nicht speichern.\n\n" + error.message);
       return;
     }
 
@@ -70,6 +93,8 @@ export default function UebungenPage() {
     setDescription("");
     setLink("");
     await loadExercises();
+    setOpenList(true);
+    setOpenCreate(false);
   }
 
   async function onDelete(id) {
@@ -89,87 +114,110 @@ export default function UebungenPage() {
       {authLoading ? (
         <p className="mt-6 text-gray-600">Prüfe Login…</p>
       ) : !user ? (
-        <p className="mt-6 text-gray-700">Du bist nicht eingeloggt. Bitte logge dich ein, um Übungen zu sehen.</p>
+        <p className="mt-6 text-gray-700">Bitte einloggen, um Übungen zu sehen.</p>
       ) : (
-        <>
+        <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
           {canCreate ? (
-            <div style={{ marginTop: 14 }}>
-              <CollapsibleSection title="Neue Übung" icon={<IconPlus />} defaultOpen={false}>
-                <form onSubmit={onCreate} className="ui-col" style={{ gap: 12 }}>
-                  <label className="field">
-                    <div className="label">Name</div>
+            <CollapsibleSection
+              icon={<IconPlus />}
+              title="Neue Übung"
+              open={openCreate}
+              onToggle={() => setOpenCreate((v) => !v)} // ✅ wichtig: Funktion übergeben
+            >
+              <form onSubmit={onCreate} className="ui-col">
+                <div className="field">
+                  <div className="label">Name</div>
+                  <input
+                    className="input"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="z.B. Kniebeuge"
+                    required
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="field">
+                    <div className="label">Kategorie (optional)</div>
                     <input
                       className="input"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="z.B. Kniebeuge"
-                      required
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      placeholder="z.B. Beine, Core, Mobility…"
                     />
-                  </label>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="field">
-                      <div className="label">Kategorie (optional)</div>
-                      <input
-                        className="input"
-                        value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        placeholder="z.B. Beine, Core, Mobility…"
-                      />
-                    </label>
-
-                    <label className="field">
-                      <div className="label">Link (optional)</div>
-                      <input
-                        className="input"
-                        value={link}
-                        onChange={(e) => setLink(e.target.value)}
-                        placeholder="z.B. YouTube / Anleitung"
-                      />
-                    </label>
                   </div>
 
-                  <label className="field">
-                    <div className="label">Beschreibung (optional)</div>
-                    <textarea
-                      className="textarea"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Kurzbeschreibung, Technik-Hinweise…"
-                      rows={3}
+                  <div className="field">
+                    <div className="label">Link (optional)</div>
+                    <input
+                      className="input"
+                      value={link}
+                      onChange={(e) => setLink(e.target.value)}
+                      placeholder="z.B. YouTube / Anleitung"
                     />
-                  </label>
-
-                  <div className="ui-row" style={{ justifyContent: "flex-end" }}>
-                    <button className="btn btn-primary btn-sm" type="submit">
-                      Übung speichern
-                    </button>
                   </div>
-                </form>
-              </CollapsibleSection>
-            </div>
+                </div>
+
+                <div className="field">
+                  <div className="label">Beschreibung (optional)</div>
+                  <textarea
+                    className="textarea"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Kurzbeschreibung, Technik-Hinweise…"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="ui-row" style={{ justifyContent: "flex-end" }}>
+                  <button className="btn btn-primary btn-sm" type="submit">
+                    Übung speichern
+                  </button>
+                </div>
+              </form>
+            </CollapsibleSection>
           ) : null}
 
-          <div style={{ marginTop: 14 }}>
-            <div className="ui-section-title" style={{ marginBottom: 10 }}>
-              Übungen
-            </div>
-
+          <CollapsibleSection
+            icon={<IconList />}
+            title="Übungsdatenbank"
+            open={openList}
+            onToggle={() => setOpenList((v) => !v)} // ✅ wichtig
+          >
             {loading ? (
               <div className="ui-empty">Lade…</div>
             ) : exercises.length === 0 ? (
               <div className="ui-empty">Noch keine Übungen angelegt.</div>
             ) : (
-              <div className="ui-list">
+              <div style={{ display: "grid", gap: 10 }}>
                 {exercises.map((ex) => (
-                  <div key={ex.id} className="ui-card ui-card-pad">
-                    <div style={{ fontWeight: 900, color: "var(--c-darker)" }}>{ex.name}</div>
-                    {ex.category ? <div className="ui-muted" style={{ color: "var(--c-darker)" }}>{ex.category}</div> : null}
-                    {ex.description ? (
-                      <div style={{ marginTop: 8, color: "var(--c-darker)", opacity: 0.9 }}>{ex.description}</div>
+                  <div
+                    key={ex.id}
+                    style={{
+                      border: "1px solid rgba(51, 42, 68, 0.10)",
+                      borderRadius: 16,
+                      padding: 12,
+                      background: "#fff",
+                    }}
+                  >
+                    <div style={{ fontWeight: 900, color: "var(--c-darker)", lineHeight: 1.15 }}>{ex.name}</div>
+                    {ex.category ? (
+                      <div className="ui-muted" style={{ color: "var(--c-darker)", marginTop: 4 }}>
+                        {ex.category}
+                      </div>
                     ) : null}
+
+                    {ex.description ? (
+                      <div style={{ marginTop: 10, color: "var(--c-darker)", opacity: 0.9 }}>{ex.description}</div>
+                    ) : null}
+
                     {ex.link ? (
-                      <a className="mt-2 block underline" href={ex.link} target="_blank" rel="noreferrer">
+                      <a
+                        href={ex.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ display: "inline-block", marginTop: 10, color: "var(--c-darker)", textDecoration: "underline" }}
+                      >
                         Link öffnen
                       </a>
                     ) : null}
@@ -185,8 +233,8 @@ export default function UebungenPage() {
                 ))}
               </div>
             )}
-          </div>
-        </>
+          </CollapsibleSection>
+        </div>
       )}
     </main>
   );

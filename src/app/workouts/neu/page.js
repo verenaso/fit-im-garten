@@ -13,11 +13,10 @@ function todayYMD() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-function IconWorkout() {
+function IconPlus() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M7 10v4M17 10v4M5 9v6M19 9v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M8.5 12h7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -26,6 +25,8 @@ export default function WorkoutNeuPage() {
   const { user, role, loading: authLoading } = useAuth();
   const isAdmin = role === "admin";
   const canCreate = useMemo(() => isAdmin, [isAdmin]);
+
+  const [openCreate, setOpenCreate] = useState(false); // ✅ default eingeklappt
 
   const [loading, setLoading] = useState(true);
   const [exercises, setExercises] = useState([]);
@@ -55,7 +56,8 @@ export default function WorkoutNeuPage() {
     }
     setLoading(true);
     loadExercises().finally(() => setLoading(false));
-  }, [authLoading, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
 
   function exLabel(ex) {
     return ex.category ? `${ex.name} (${ex.category})` : ex.name;
@@ -139,178 +141,198 @@ export default function WorkoutNeuPage() {
     setTitle("");
     setNotes("");
     setItems([]);
+    setOpenCreate(false);
   }
 
   return (
     <main className="min-h-screen" style={{ paddingBottom: 96 }}>
       {authLoading ? (
-        <p className="mt-6 text-slate-600">Prüfe Login…</p>
+        <p className="mt-6 text-gray-600">Prüfe Login…</p>
       ) : !user ? (
-        <p className="mt-6 text-slate-800">Du bist nicht eingeloggt. Bitte logge dich ein.</p>
+        <p className="mt-6 text-gray-700">Bitte einloggen.</p>
       ) : loading ? (
-        <p className="mt-6 text-slate-600">Lade Übungen…</p>
+        <p className="mt-6 text-gray-600">Lade Übungen…</p>
       ) : (
-        <>
-          {!canCreate ? <p className="mt-6 text-slate-600">Nur Admins können Workouts erstellen.</p> : null}
+        <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+          {!canCreate ? <div className="ui-empty">Nur Admins können Workouts erstellen.</div> : null}
 
-          <div style={{ marginTop: 14 }}>
-            <CollapsibleSection title="Workout erstellen" icon={<IconWorkout />} defaultOpen={false}>
-              <form onSubmit={onSave} className="ui-col" style={{ gap: 14 }}>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="field">
-                    <div className="label">Datum</div>
-                    <input
-                      className="input"
-                      type="date"
-                      value={workoutDate}
-                      onChange={(e) => setWorkoutDate(e.target.value)}
-                      required
-                    />
-                  </label>
-
-                  <label className="field">
-                    <div className="label">Titel</div>
-                    <input
-                      className="input"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="z.B. Ganzkörper A"
-                      required
-                    />
-                  </label>
-                </div>
-
-                <label className="field">
-                  <div className="label">Notizen (optional)</div>
-                  <textarea
-                    className="textarea"
-                    rows={3}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Warmup, Fokus, Besonderheiten…"
+          <CollapsibleSection
+            icon={<IconPlus />}
+            title="Workout erstellen"
+            open={openCreate}
+            onToggle={() => setOpenCreate((v) => !v)} // ✅ wichtig
+          >
+            <form onSubmit={onSave} className="ui-col">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="field">
+                  <div className="label">Datum</div>
+                  <input
+                    className="input"
+                    type="date"
+                    value={workoutDate}
+                    onChange={(e) => setWorkoutDate(e.target.value)}
+                    required
+                    disabled={!canCreate}
                   />
-                </label>
-
-                <div className="ui-card ui-card-pad" style={{ background: "rgba(92, 76, 124, 0.05)" }}>
-                  <div className="label" style={{ marginBottom: 8 }}>
-                    Übungen hinzufügen
-                  </div>
-
-                  <div className="ui-col" style={{ gap: 10 }}>
-                    <div className="ui-row" style={{ gap: 10, flexWrap: "wrap" }}>
-                      <select
-                        className="input"
-                        style={{ flex: 1, minWidth: 220 }}
-                        value={selectedExerciseId}
-                        onChange={(e) => setSelectedExerciseId(e.target.value)}
-                      >
-                        <option value="">Übung auswählen…</option>
-                        {exercises.map((ex) => (
-                          <option key={ex.id} value={ex.id}>
-                            {exLabel(ex)}
-                          </option>
-                        ))}
-                      </select>
-
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={addItem}
-                        disabled={!selectedExerciseId}
-                      >
-                        Hinzufügen
-                      </button>
-                    </div>
-
-                    {items.length === 0 ? (
-                      <div className="ui-empty">Noch keine Übungen im Workout.</div>
-                    ) : (
-                      <div style={{ display: "grid", gap: 10 }}>
-                        {items.map((it, idx) => {
-                          const ex = exercises.find((e) => e.id === it.exercise_id);
-                          return (
-                            <div key={`${it.exercise_id}-${idx}`} className="ui-card ui-card-pad">
-                              <div className="ui-row" style={{ alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontWeight: 900, color: "var(--c-darker)" }}>
-                                    {idx + 1}. {ex ? exLabel(ex) : "Übung"}
-                                  </div>
-
-                                  <div className="grid gap-2 sm:grid-cols-3" style={{ marginTop: 10 }}>
-                                    <label className="field">
-                                      <div className="label">Sätze</div>
-                                      <input
-                                        className="input"
-                                        inputMode="numeric"
-                                        value={it.sets}
-                                        onChange={(e) => updateItem(idx, { sets: e.target.value })}
-                                        placeholder="z.B. 3"
-                                      />
-                                    </label>
-
-                                    <label className="field">
-                                      <div className="label">Wdh</div>
-                                      <input
-                                        className="input"
-                                        inputMode="numeric"
-                                        value={it.reps}
-                                        onChange={(e) => updateItem(idx, { reps: e.target.value })}
-                                        placeholder="z.B. 10"
-                                      />
-                                    </label>
-
-                                    <label className="field">
-                                      <div className="label">Dauer (Sek.)</div>
-                                      <input
-                                        className="input"
-                                        inputMode="numeric"
-                                        value={it.duration_sec}
-                                        onChange={(e) => updateItem(idx, { duration_sec: e.target.value })}
-                                        placeholder="z.B. 60"
-                                      />
-                                    </label>
-                                  </div>
-
-                                  <label className="field" style={{ marginTop: 10 }}>
-                                    <div className="label">Notiz (optional)</div>
-                                    <input
-                                      className="input"
-                                      value={it.note}
-                                      onChange={(e) => updateItem(idx, { note: e.target.value })}
-                                      placeholder="z.B. Tempo 3-1-1"
-                                    />
-                                  </label>
-                                </div>
-
-                                <div className="ui-col" style={{ gap: 6, alignItems: "flex-end" }}>
-                                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => moveItem(idx, -1)} disabled={idx === 0}>
-                                    ↑
-                                  </button>
-                                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => moveItem(idx, 1)} disabled={idx === items.length - 1}>
-                                    ↓
-                                  </button>
-                                  <button type="button" className="btn btn-danger btn-sm" onClick={() => removeItem(idx)}>
-                                    Entfernen
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
                 </div>
 
-                <div className="ui-row" style={{ justifyContent: "flex-end" }}>
-                  <button className="btn btn-primary btn-sm" type="submit" disabled={!canCreate}>
-                    Workout speichern
+                <div className="field">
+                  <div className="label">Titel</div>
+                  <input
+                    className="input"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="z.B. Ganzkörper A"
+                    required
+                    disabled={!canCreate}
+                  />
+                </div>
+              </div>
+
+              <div className="field">
+                <div className="label">Notizen (optional)</div>
+                <textarea
+                  className="textarea"
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Warmup, Fokus, Besonderheiten…"
+                  disabled={!canCreate}
+                />
+              </div>
+
+              <div
+                style={{
+                  border: "1px solid rgba(51, 42, 68, 0.10)",
+                  borderRadius: 16,
+                  padding: 12,
+                  background: "#fff",
+                }}
+              >
+                <div style={{ fontWeight: 900, color: "var(--c-darker)" }}>Übungen hinzufügen</div>
+
+                <div className="ui-row" style={{ gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                  <select
+                    className="input"
+                    style={{ flex: "1 1 220px" }}
+                    value={selectedExerciseId}
+                    onChange={(e) => setSelectedExerciseId(e.target.value)}
+                    disabled={!canCreate}
+                  >
+                    <option value="">Übung auswählen…</option>
+                    {exercises.map((ex) => (
+                      <option key={ex.id} value={ex.id}>
+                        {exLabel(ex)}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={addItem} disabled={!selectedExerciseId || !canCreate}>
+                    Hinzufügen
                   </button>
                 </div>
-              </form>
-            </CollapsibleSection>
-          </div>
-        </>
+
+                {items.length === 0 ? (
+                  <div className="ui-empty" style={{ marginTop: 10 }}>
+                    Noch keine Übungen im Workout.
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                    {items.map((it, idx) => {
+                      const ex = exercises.find((e) => e.id === it.exercise_id);
+                      return (
+                        <div
+                          key={`${it.exercise_id}-${idx}`}
+                          style={{
+                            border: "1px solid rgba(51, 42, 68, 0.10)",
+                            borderRadius: 16,
+                            padding: 12,
+                            background: "rgba(92, 76, 124, 0.03)",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontWeight: 900, color: "var(--c-darker)" }}>
+                                {idx + 1}. {ex ? exLabel(ex) : "Übung"}
+                              </div>
+
+                              <div className="grid gap-2 sm:grid-cols-3" style={{ marginTop: 10 }}>
+                                <div className="field">
+                                  <div className="label">Sätze</div>
+                                  <input
+                                    className="input"
+                                    inputMode="numeric"
+                                    value={it.sets}
+                                    onChange={(e) => updateItem(idx, { sets: e.target.value })}
+                                    placeholder="z.B. 3"
+                                    disabled={!canCreate}
+                                  />
+                                </div>
+
+                                <div className="field">
+                                  <div className="label">Wdh</div>
+                                  <input
+                                    className="input"
+                                    inputMode="numeric"
+                                    value={it.reps}
+                                    onChange={(e) => updateItem(idx, { reps: e.target.value })}
+                                    placeholder="z.B. 10"
+                                    disabled={!canCreate}
+                                  />
+                                </div>
+
+                                <div className="field">
+                                  <div className="label">Dauer (Sek.)</div>
+                                  <input
+                                    className="input"
+                                    inputMode="numeric"
+                                    value={it.duration_sec}
+                                    onChange={(e) => updateItem(idx, { duration_sec: e.target.value })}
+                                    placeholder="z.B. 60"
+                                    disabled={!canCreate}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="field" style={{ marginTop: 10 }}>
+                                <div className="label">Notiz (optional)</div>
+                                <input
+                                  className="input"
+                                  value={it.note}
+                                  onChange={(e) => updateItem(idx, { note: e.target.value })}
+                                  placeholder="z.B. Tempo 3-1-1"
+                                  disabled={!canCreate}
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ display: "grid", gap: 6, flex: "0 0 auto" }}>
+                              <button type="button" className="btn btn-ghost btn-sm" onClick={() => moveItem(idx, -1)} disabled={idx === 0 || !canCreate}>
+                                ↑
+                              </button>
+                              <button type="button" className="btn btn-ghost btn-sm" onClick={() => moveItem(idx, 1)} disabled={idx === items.length - 1 || !canCreate}>
+                                ↓
+                              </button>
+                              <button type="button" className="btn btn-danger btn-sm" onClick={() => removeItem(idx)} disabled={!canCreate}>
+                                Entfernen
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="ui-row" style={{ justifyContent: "flex-end" }}>
+                <button className="btn btn-primary btn-sm" type="submit" disabled={!canCreate}>
+                  Workout speichern
+                </button>
+              </div>
+            </form>
+          </CollapsibleSection>
+        </div>
       )}
     </main>
   );
