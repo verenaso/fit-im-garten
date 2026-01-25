@@ -58,6 +58,20 @@ function IconTrash() {
         strokeWidth="1.8"
         strokeLinejoin="round"
       />
+      
+    </svg>
+  );
+}
+
+function IconPlay() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M9 7.5v9l8-4.5-8-4.5Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -201,18 +215,32 @@ export default function WorkoutDetailPage() {
               <IconBack /> Zurück
             </button>
 
-            {isAdmin ? (
-              <button
-                type="button"
-                className="btn btn-danger btn-sm"
-                onClick={handleDelete}
-                disabled={busyDelete || loading}
-                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-                title="Workout löschen"
-              >
-                <IconTrash /> {busyDelete ? "Lösche…" : "Löschen"}
-              </button>
-            ) : null}
+           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+  <button
+    type="button"
+    className="btn btn-primary btn-sm"
+    onClick={() => router.push(`/workouts/start/${workoutId}`)}
+    disabled={loading || !workout}
+    style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+    title="Workout starten"
+  >
+    <IconPlay /> Workout starten
+  </button>
+
+  {isAdmin ? (
+    <button
+      type="button"
+      className="btn btn-danger btn-sm"
+      onClick={handleDelete}
+      disabled={busyDelete || loading}
+      style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+      title="Workout löschen"
+    >
+      <IconTrash /> {busyDelete ? "Lösche…" : "Löschen"}
+    </button>
+  ) : null}
+</div>
+
           </div>
 
           {error ? (
