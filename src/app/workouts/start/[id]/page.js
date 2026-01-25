@@ -51,6 +51,7 @@ export default function WorkoutStartPage() {
   const [remaining, setRemaining] = useState(0);
 
   const intervalRef = useRef(null);
+  const autoStartNextRef = useRef(false);
 
   const current = steps[stepIndex] || null;
   const isLast = stepIndex >= steps.length - 1;
@@ -83,6 +84,13 @@ export default function WorkoutStartPage() {
       setRemaining(0);
     }
   }, [stepIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Auto-start für Zeit-Schritte (inkl. Pausen)
+if (autoStartNextRef.current && current.mode === "time") {
+  autoStartNextRef.current = false;
+  setTimeout(() => startStep(), 150);
+} else {
+  autoStartNextRef.current = false;
+}
 
   async function loadWorkoutForPlayer() {
     setLoading(true);
@@ -224,6 +232,7 @@ export default function WorkoutStartPage() {
   }
 
   function pauseStep() {
+    autoStartNextRef.current = false;
     setIsRunning(false);
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = null;
@@ -231,6 +240,9 @@ export default function WorkoutStartPage() {
 
   function goNext(fromAuto = false) {
     if (!steps.length) return;
+    // Wenn wir zum nächsten Schritt gehen, soll er automatisch starten (außer der User hat explizit pausiert)
+    autoStartNextRef.current = true;
+
 
     // if last
     if (isLast) {
@@ -327,7 +339,7 @@ export default function WorkoutStartPage() {
 
             {/* Instruction */}
             {current?.mode === "time" ? (
-              <div style={{ fontSize: 54, fontWeight: 900, letterSpacing: "-0.02em", color: "var(--c-darker)" }}>
+              <div style={{ fontSize: 70, fontWeight: 900, letterSpacing: "-0.02em", color: "var(--c-darker)" }}>
                 {fmtTime(remaining)}
               </div>
             ) : (
