@@ -9,9 +9,9 @@ const REST_BETWEEN_SETS_SEC = 20;
 const REST_BETWEEN_EXERCISES_SEC = 30;
 
 // Audio-Dateien (MVP). Lege sie später in /public/audio/ ab.
-const AUDIO_START = "/audio/start.mp3"; // z.B. "Los geht's"
-const AUDIO_REST = "/audio/rest.mp3";   // z.B. "Pause"
-const AUDIO_DONE = "/audio/done.mp3";   // z.B. "Fertig"
+const AUDIO_START = "/audio/start.m4a"; // z.B. "Los geht's"
+const AUDIO_REST = "/audio/rest.mp4a";   // z.B. "Pause"
+const AUDIO_DONE = "/audio/done.mp4a";   // z.B. "Fertig"
 
 function safePlay(src) {
   try {
