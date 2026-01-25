@@ -12,6 +12,7 @@ const REST_BETWEEN_EXERCISES_SEC = 30;
 const AUDIO_START = "/audio/start.m4a"; // z.B. "Los geht's"
 const AUDIO_REST = "/audio/rest.mp4a";   // z.B. "Pause"
 const AUDIO_DONE = "/audio/done.mp4a";   // z.B. "Fertig"
+const AUDIO_5SEC = "/audio/5sec.m4a";
 
 function safePlay(src) {
   try {
@@ -215,6 +216,11 @@ if (autoStartNextRef.current && current.mode === "time") {
       intervalRef.current = setInterval(() => {
         setRemaining((r) => {
           const next = Math.max(0, r - 1);
+             // 🔊 cue bei 5 Sekunden (nur wenn der Step eine Übung ist, nicht bei Pause)
+    if (next === 5) {
+      safePlay(AUDIO_5SEC);
+    }
+         
           if (next === 0) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
